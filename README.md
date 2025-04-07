@@ -8,6 +8,10 @@
 # Clone to install
 [GitHub repository](https://github.com/CFurri)
 
-# Version 1.0.0
+# Versions
+| Version | Description   |
+|---------|---------------|
+| 1.0.0   | First edition |
+
 # MIT License
 
