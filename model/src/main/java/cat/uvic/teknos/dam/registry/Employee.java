@@ -27,9 +27,4 @@ public interface Employee {
     LocalDate getHireDate();
     void setHireDate(LocalDate hireDate);
 
-    // contract_type
-    String getContractType();
-    void setContractType(String contractType);
-
-
 }

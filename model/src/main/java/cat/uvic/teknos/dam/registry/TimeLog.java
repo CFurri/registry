@@ -3,14 +3,14 @@ package cat.uvic.teknos.dam.registry;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public interface Time_log {
+public interface TimeLog {
     // log_id (PK autoincremental)
     int getId();
     void setId(int id);
 
     // employee_id (FK)
-    int getEmployeeId();
-    void setEmployeeId(int employeeId);
+    Employee getEmployee();
+    void setEmployeeId(Employee employee);
 
     // log_date
     LocalDate getLogDate();

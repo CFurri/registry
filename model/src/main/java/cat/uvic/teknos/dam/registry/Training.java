@@ -22,4 +22,3 @@ public interface Training {
     void setMandatory(boolean mandatory);
 
 }
-// https://chat.deepseek.com/a/chat/s/b999c978-4c3b-48be-8ec6-ae43ef8a8068
