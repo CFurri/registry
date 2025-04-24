@@ -8,4 +8,5 @@ public interface Repository<K, V>{
 
     //gestiona un objecte i li hem d'especificar la clau, l'id
     //tots els repositoris que fem servir nosaltres, han d'implementar aquesta interfície
+    //hola
 }
