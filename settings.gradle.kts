@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = "registry"
-include("app", "list", "utilities", "model")
+include("app", "list", "utilities", "model", "repository")
