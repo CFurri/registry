@@ -26,5 +26,4 @@ public interface Employee {
     // hire_date (DATE → LocalDate)
     LocalDate getHireDate();
     void setHireDate(LocalDate hireDate);
-
 }
