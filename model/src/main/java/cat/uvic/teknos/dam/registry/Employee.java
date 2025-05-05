@@ -3,7 +3,7 @@ package cat.uvic.teknos.dam.registry;
 import java.time.LocalDate;
 
 public interface Employee {
-    // employee_id (PK autoincremental)
+    // employee_id (PK auto-incremental)
     int getId();
     void setId(int id);
 
