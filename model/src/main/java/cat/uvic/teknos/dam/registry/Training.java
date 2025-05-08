@@ -1,6 +1,10 @@
 package cat.uvic.teknos.dam.registry;
 
 public interface Training {
+    int getTrainingId();
+
+    void setTrainingId(int trainingId);
+
     // Mètodes per a la columna 'training_id' (PK autoincremental)
     int getId();
     void setId(int id);

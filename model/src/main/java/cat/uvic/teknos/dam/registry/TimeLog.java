@@ -4,6 +4,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 public interface TimeLog {
+    int getLogId();
+
+    void setLogId(int logId);
+
+    int getEmployeeId();
+
+    void setEmployeeId(int employeeId);
+
     // log_id (PK autoincremental)
     int getId();
     void setId(int id);
