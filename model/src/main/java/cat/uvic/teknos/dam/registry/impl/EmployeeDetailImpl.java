@@ -1,7 +1,7 @@
 package cat.uvic.teknos.dam.registry.impl;
 
 import cat.uvic.teknos.dam.registry.EmployeeDetail;
-
+//s
 public class EmployeeDetailImpl implements EmployeeDetail {
     private int employeeId;
     private String address;
