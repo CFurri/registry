@@ -1,13 +1,14 @@
-package cat.uvic.teknos.dam.registry.impl;
+package cat.uvic.teknos.m0846.jdbc;
 
 import cat.uvic.teknos.dam.registry.Employee;
 import cat.uvic.teknos.dam.registry.EmployeeRepository;
+import cat.uvic.teknos.dam.registry.impl.EmployeeImpl;
 
 import java.sql.*;
 import java.util.HashSet;
 import java.util.Set;
 
-public class EmployeeRepositoryImpl implements EmployeeRepository {
+public class EmployeeJdbcRepository implements EmployeeRepository {
     private final String jdbcUrl = "jdbc:mysql://localhost:3306/your_database";
     private final String jdbcUsername = "root";
     private final String jdbcPassword = "password";

@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation("org.apache.commons:commons-text") //llibreria que té moltes utilitats
+    implementation("com.mysql:mysql-connector-j:9.3.0")
 }
 
 application {
