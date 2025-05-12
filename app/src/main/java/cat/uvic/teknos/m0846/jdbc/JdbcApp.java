@@ -1,46 +1,51 @@
 package cat.uvic.teknos.m0846.jdbc;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import cat.uvic.teknos.dam.registry.Employee;
+import cat.uvic.teknos.dam.registry.impl.EmployeeImpl;
+
+import java.time.LocalDate;
+import java.util.Set;
 
 public class JdbcApp {
     public static void main(String[] args) {
         try {
             executeLogic();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error in application: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private static void executeLogic() throws SQLException{
-        try(var connection = DriverManager.getConnection("jdbc:mysql://localhost/3306/registry", "root", "rootpassword"))
+    private static void executeLogic() {
+        EmployeeJdbcRepository repository = new EmployeeJdbcRepository();
 
-        System.out.println("Schema: " + connection);
+        // Crear i guardar empleats
+        Employee emp1 = new EmployeeImpl();
+        emp1.setFirstName("John");
+        emp1.setLastName("Smith");
+        emp1.setEmail("john.smith@example.com");
+        emp1.setPhoneNumber("123456789");
+        emp1.setHireDate(LocalDate.of(2023, 1, 10));
+        repository.save(emp1);
 
-        var statement = connection.createStatement();
-        statement.executeUpdate("INSERT INTO PERSON(ID, FIRST_NAME, LAST_NAME) VALUES (1, 'John', 'Smith')");
+        Employee emp2 = new EmployeeImpl();
+        emp2.setFirstName("David");
+        emp2.setLastName("Gilmour");
+        emp2.setEmail("david.gilmour@example.com");
+        emp2.setPhoneNumber("987654321");
+        emp2.setHireDate(LocalDate.of(2022, 5, 5));
+        repository.save(emp2);
 
-        addPerson(connection, 2, "David", "Gilmour");
-        addPerson(connection, 3, "Jimi", "Hendriz");
-        addPerson(connection, 4, "John", "Parker");
-
-        var statement = connection.createStatement();
-        var results = statement.executeQuery("select * from PERSON");
-        while (results.next()){
-            System.out.println("ID: " + results.getInt("ID: "));
-            System.out.println("FIRST_NAME: " + results.getString("FIRST_NAME"));
-            System.out.println("LAST_NAME "+ results.getString("LAST_NAME"));
+        // Mostrar empleats
+        Set<Employee> allEmployees = repository.getAll();
+        for (Employee employee : allEmployees) {
+            System.out.println("ID: " + employee.getId());
+            System.out.println("FIRST NAME: " + employee.getFirstName());
+            System.out.println("LAST NAME: " + employee.getLastName());
+            System.out.println("EMAIL: " + employee.getEmail());
+            System.out.println("PHONE: " + employee.getPhoneNumber());
+            System.out.println("HIRE DATE: " + employee.getHireDate());
+            System.out.println("----------");
         }
-    }
-
-
-    private static void addPerson(Connection connection, int id, int String firstName, String lastName) throws SQLException{
-        var statement = connection.createStatement("insert into Person (id, firstName, lastName) value (?,?,?)");
-        preparedStatement.setInt(1, id);
-
-        statement.executeUpdate("INSERT INTO PERSON(ID, FIRST_NAME, LAST_NAME) VALUES (1, 'John', 'Smith')");
     }
 }
-
-
-

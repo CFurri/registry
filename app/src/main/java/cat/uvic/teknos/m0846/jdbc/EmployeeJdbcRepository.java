@@ -5,13 +5,15 @@ import cat.uvic.teknos.dam.registry.EmployeeRepository;
 import cat.uvic.teknos.dam.registry.impl.EmployeeImpl;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
 public class EmployeeJdbcRepository implements EmployeeRepository {
-    private final String jdbcUrl = "jdbc:mysql://localhost:3306/your_database";
+
+    private final String jdbcUrl = "jdbc:mysql://localhost:3306/registry";
     private final String jdbcUsername = "root";
-    private final String jdbcPassword = "password";
+    private final String jdbcPassword = "rootpassword"; // Canvia-ho si cal
 
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword);
@@ -19,16 +21,36 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
 
     @Override
     public void save(Employee employee) {
-        String sql = "INSERT INTO EMPLOYEE (first_name, last_name, email, phone_number, hire_date) VALUES (?, ?, ?, ?, ?)";
+        String sql;
 
-        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        if (employee.getId() == null || get(employee.getId()) == null) {
+            sql = "INSERT INTO EMPLOYEE (first_name, last_name, email, phone_number, hire_date) VALUES (?, ?, ?, ?, ?)";
+        } else {
+            sql = "UPDATE EMPLOYEE SET first_name = ?, last_name = ?, email = ?, phone_number = ?, hire_date = ? WHERE employee_id = ?";
+        }
+
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, employee.getFirstName());
             stmt.setString(2, employee.getLastName());
             stmt.setString(3, employee.getEmail());
             stmt.setString(4, employee.getPhoneNumber());
             stmt.setDate(5, Date.valueOf(employee.getHireDate()));
 
+            if (employee.getId() != null && get(employee.getId()) != null) {
+                stmt.setInt(6, employee.getId());
+            }
+
             stmt.executeUpdate();
+
+            // Assignar ID generat automàticament (si s'ha fet INSERT)
+            if (employee.getId() == null) {
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        employee.setId(generatedKeys.getInt(1));
+                    }
+                }
+            }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -56,17 +78,13 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                employee = new EmployeeImpl();
-                employee.setId(rs.getInt("employee_id"));
-                employee.setFirstName(rs.getString("first_name"));
-                employee.setLastName(rs.getString("last_name"));
-                employee.setEmail(rs.getString("email"));
-                employee.setPhoneNumber(rs.getString("phone_number"));
-                employee.setHireDate(rs.getDate("hire_date").toLocalDate());
+                employee = mapRowToEmployee(rs);
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return employee;
     }
 
@@ -79,20 +97,31 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                Employee employee = new EmployeeImpl();
-                employee.setId(rs.getInt("employee_id"));
-                employee.setFirstName(rs.getString("first_name"));
-                employee.setLastName(rs.getString("last_name"));
-                employee.setEmail(rs.getString("email"));
-                employee.setPhoneNumber(rs.getString("phone_number"));
-                employee.setHireDate(rs.getDate("hire_date").toLocalDate());
-
-                employees.add(employee);
+                employees.add(mapRowToEmployee(rs));
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
         return employees;
+    }
+
+    private Employee mapRowToEmployee(ResultSet rs) throws SQLException {
+        Employee employee = new EmployeeImpl();
+        employee.setId(rs.getInt("employee_id"));
+        employee.setFirstName(rs.getString("first_name"));
+        employee.setLastName(rs.getString("last_name"));
+        employee.setEmail(rs.getString("email"));
+        employee.setPhoneNumber(rs.getString("phone_number"));
+
+        Date hireDate = rs.getDate("hire_date");
+        if (hireDate != null) {
+            employee.setHireDate(hireDate.toLocalDate());
+        } else {
+            employee.setHireDate(LocalDate.now());
+        }
+
+        return employee;
     }
 }
