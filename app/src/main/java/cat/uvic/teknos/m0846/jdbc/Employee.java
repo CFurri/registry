@@ -1,6 +1,5 @@
 package cat.uvic.teknos.m0846.jdbc;
 
-import cat.uvic.teknos.dam.registry.Employee;
 import cat.uvic.teknos.dam.registry.EmployeeRepository;
 import cat.uvic.teknos.dam.registry.impl.EmployeeImpl;
 
@@ -9,9 +8,9 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
-public class EmployeeJdbcRepository implements EmployeeRepository {
+public class Employee implements EmployeeRepository {
 
-    private final String jdbcUrl = "jdbc:mysql://localhost:3306/registry";
+    private final String jdbcUrl = "jdbc:mysql://localhost:8080/registry";
     private final String jdbcUsername = "root";
     private final String jdbcPassword = "rootpassword"; // Canvia-ho si cal
 
@@ -20,7 +19,7 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
     }
 
     @Override
-    public void save(Employee employee) {
+    public void save(cat.uvic.teknos.dam.registry.Employee employee) {
         String sql;
 
         if (employee.getId() == null || get(employee.getId()) == null) {
@@ -57,7 +56,7 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
     }
 
     @Override
-    public void delete(Employee employee) {
+    public void delete(cat.uvic.teknos.dam.registry.Employee employee) {
         String sql = "DELETE FROM EMPLOYEE WHERE employee_id = ?";
 
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -69,9 +68,9 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
     }
 
     @Override
-    public Employee get(Integer id) {
+    public cat.uvic.teknos.dam.registry.Employee get(Integer id) {
         String sql = "SELECT * FROM EMPLOYEE WHERE employee_id = ?";
-        Employee employee = null;
+        cat.uvic.teknos.dam.registry.Employee employee = null;
 
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
@@ -89,9 +88,9 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
     }
 
     @Override
-    public Set<Employee> getAll() {
+    public Set<cat.uvic.teknos.dam.registry.Employee> getAll() {
         String sql = "SELECT * FROM EMPLOYEE";
-        Set<Employee> employees = new HashSet<>();
+        Set<cat.uvic.teknos.dam.registry.Employee> employees = new HashSet<>();
 
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             ResultSet rs = stmt.executeQuery();
@@ -107,8 +106,8 @@ public class EmployeeJdbcRepository implements EmployeeRepository {
         return employees;
     }
 
-    private Employee mapRowToEmployee(ResultSet rs) throws SQLException {
-        Employee employee = new EmployeeImpl();
+    private cat.uvic.teknos.dam.registry.Employee mapRowToEmployee(ResultSet rs) throws SQLException {
+        cat.uvic.teknos.dam.registry.Employee employee = new EmployeeImpl();
         employee.setId(rs.getInt("employee_id"));
         employee.setFirstName(rs.getString("first_name"));
         employee.setLastName(rs.getString("last_name"));
