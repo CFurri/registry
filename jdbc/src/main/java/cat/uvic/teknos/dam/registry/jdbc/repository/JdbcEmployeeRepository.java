@@ -1,4 +1,4 @@
-package cat.uvic.teknos.dam.registry.repository.jdbc;
+package cat.uvic.teknos.dam.registry.jdbc.repository;
 
 import cat.uvic.teknos.dam.registry.EmployeeRepository;
 
