@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class SingleConnectionDataSource implements DataSource {
+    private final DataSource dataSource;
+
     private Connection connection;
     private final String driver;
     private final String server;
@@ -18,10 +20,30 @@ public class SingleConnectionDataSource implements DataSource {
     private final String user;
     private final String password;
 
+    public String getDriver() {
+        return driver;
+    }
+
+    public String getServer() {
+        return server;
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     public SingleConnectionDataSource(){
         var properties = new Properties();
         try {
-            properties.load(new FileInputStream("datasource.properties"))
+            properties.load(this.getClass().getResourceAsStream("datasource.properties"));
         } catch (IOException e){
             throw new RuntimeException(e);
         }
