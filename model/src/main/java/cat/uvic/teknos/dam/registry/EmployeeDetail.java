@@ -4,6 +4,10 @@ public interface EmployeeDetail {
     // employee_id (PK i FK)
     int getEmployeeId();
     void setEmployeeId(int employeeId);
+    
+    // Relación con Employee (1:1)
+    Employee getEmployee();
+    void setEmployee(Employee employee);
 
     // address
     String getAddress();

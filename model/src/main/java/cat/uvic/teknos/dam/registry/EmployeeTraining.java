@@ -3,12 +3,20 @@ package cat.uvic.teknos.dam.registry;
 import java.time.LocalDate;
 
 public interface EmployeeTraining {
-    // Clau composta (employee_id, training_id)
+    // Clave compuesta (employee_id, training_id)
     int getEmployeeId();
     void setEmployeeId(int employeeId);
+    
+    // Relación con Employee
+    Employee getEmployee();
+    void setEmployee(Employee employee);
 
     int getTrainingId();
     void setTrainingId(int trainingId);
+    
+    // Relación con Training
+    Training getTraining();
+    void setTraining(Training training);
 
     // completion_date (DATE → LocalDate)
     LocalDate getCompletionDate();
@@ -22,4 +30,3 @@ public interface EmployeeTraining {
     double getScore();
     void setScore(double score);
 }
-

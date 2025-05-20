@@ -1,28 +1,31 @@
 package cat.uvic.teknos.dam.registry;
 
+import java.util.Set;
+
 public interface Training {
-    int getTrainingId();
-
-    void setTrainingId(int trainingId);
-
-    // Mètodes per a la columna 'training_id' (PK autoincremental)
+    // training_id (PK autoincremental)
     int getId();
     void setId(int id);
 
-    //Mètodes per a la columna 'title'
+    // title
     String getTitle();
     void setTitle(String title);
 
-    // Mètodes per a la columna 'description'
+    // description
     String getDescription();
     void setDescription(String description);
 
-    // Mètodes per a 'duration_hours'
+    // duration_hours
     int getDurationHours();
     void setDurationHours(int durationHours);
 
-    // Mètodes per a 'mandatory'
+    // mandatory
     boolean isMandatory();
     void setMandatory(boolean mandatory);
-
+    
+    // Relación many-to-many con Employee
+    Set<Employee> getEmployees();
+    void setEmployees(Set<Employee> employees);
+    void addEmployee(Employee employee);
+    void removeEmployee(Employee employee);
 }

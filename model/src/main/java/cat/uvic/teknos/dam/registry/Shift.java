@@ -1,31 +1,32 @@
 package cat.uvic.teknos.dam.registry;
 
-import java.util.List;
+import java.time.LocalTime;
+import java.util.Set;
 
 public interface Shift {
-    int getShiftId();
+    // shift_id (PK auto-incremental)
+    int getId();
+    void setId(int id);
 
-    void setShiftId(int shiftId);
-
+    // name
     String getName();
-
     void setName(String name);
 
-    String getStartTime();
+    // start_time (TIME → LocalTime)
+    LocalTime getStartTime();
+    void setStartTime(LocalTime startTime);
 
-    void setStartTime(String startTime);
+    // end_time (TIME → LocalTime)
+    LocalTime getEndTime();
+    void setEndTime(LocalTime endTime);
 
-    String getEndTime();
-
-    void setEndTime(String endTime);
-
+    // location
     String getLocation();
-
     void setLocation(String location);
 
-    // Relació many-to-many amb Employee
-    List<Employee> getEmployees();
-    void setEmployees(List<Employee> employees);
+    // Relación many-to-many con Employee
+    Set<Employee> getEmployees();
+    void setEmployees(Set<Employee> employees);
+    void addEmployee(Employee employee);
+    void removeEmployee(Employee employee);
 }
-
-
