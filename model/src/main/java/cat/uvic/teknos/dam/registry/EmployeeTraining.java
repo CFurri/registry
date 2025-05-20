@@ -4,15 +4,15 @@ import java.time.LocalDate;
 
 public interface EmployeeTraining {
     // Clave compuesta (employee_id, training_id)
-    int getEmployeeId();
-    void setEmployeeId(int employeeId);
+    int getPersonId();
+    void setPersonId(int personId);
     
     // Relación con Employee
     Employee getEmployee();
     void setEmployee(Employee employee);
 
-    int getTrainingId();
-    void setTrainingId(int trainingId);
+    int getCourseId();
+    void setCourseId(int courseId);
     
     // Relación con Training
     Training getTraining();

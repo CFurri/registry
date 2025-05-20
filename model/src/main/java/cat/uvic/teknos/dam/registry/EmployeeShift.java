@@ -2,16 +2,16 @@ package cat.uvic.teknos.dam.registry;
 
 public interface EmployeeShift {
     // employee_id (PK, FK)
-    int getEmployeeId();
-    void setEmployeeId(int employeeId);
+    int getPersonId();
+    void setPersonId(int personId);
     
     // Relación con Employee
     Employee getEmployee();
     void setEmployee(Employee employee);
 
     // shift_id (PK, FK)
-    int getShiftId();
-    void setShiftId(int shiftId);
+    int getScheduleId();
+    void setScheduleId(int scheduleId);
     
     // Relación con Shift
     Shift getShift();

@@ -2,8 +2,8 @@ package cat.uvic.teknos.dam.registry;
 
 public interface EmployeeDetail {
     // employee_id (PK i FK)
-    int getEmployeeId();
-    void setEmployeeId(int employeeId);
+    int getId();
+    void setId(int id);
     
     // Relación con Employee (1:1)
     Employee getEmployee();

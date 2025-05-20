@@ -9,4 +9,4 @@ public interface Repository<K, V> {
     Set<V> getAll();          // Obté tots els registres
 }
 //defineixo una interfície amb genèrics (K, V)
-// en classe principal = repositori, sinó no
+
