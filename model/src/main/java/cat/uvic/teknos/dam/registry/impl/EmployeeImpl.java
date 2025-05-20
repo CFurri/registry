@@ -1,6 +1,6 @@
 package cat.uvic.teknos.dam.registry.impl;
 
-import cat.uvic.teknos.dam.registry.Employee;
+import cat.uvic.teknos.dam.registry.*;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -71,5 +71,75 @@ public class EmployeeImpl implements Employee {
     @Override
     public void setHireDate(LocalDate hireDate) {
         this.hireDate = hireDate;  // Implementació del setter
+    }
+
+    @Override
+    public EmployeeDetail getEmployeeDetail() {
+        return null;
+    }
+
+    @Override
+    public void setEmployeeDetail(EmployeeDetail employeeDetail) {
+
+    }
+
+    @Override
+    public Set<TimeLog> getTimeLogs() {
+        return Set.of();
+    }
+
+    @Override
+    public void setTimeLogs(Set<TimeLog> timeLogs) {
+
+    }
+
+    @Override
+    public void addTimeLog(TimeLog timeLog) {
+
+    }
+
+    @Override
+    public void removeTimeLog(TimeLog timeLog) {
+
+    }
+
+    @Override
+    public Set<Shift> getShifts() {
+        return Set.of();
+    }
+
+    @Override
+    public void setShifts(Set<Shift> shifts) {
+
+    }
+
+    @Override
+    public void addShift(Shift shift) {
+
+    }
+
+    @Override
+    public void removeShift(Shift shift) {
+
+    }
+
+    @Override
+    public Set<Training> getTrainings() {
+        return Set.of();
+    }
+
+    @Override
+    public void setTrainings(Set<Training> trainings) {
+
+    }
+
+    @Override
+    public void addTraining(Training training) {
+
+    }
+
+    @Override
+    public void removeTraining(Training training) {
+
     }
 }

@@ -1,23 +1,11 @@
 package cat.uvic.teknos.dam.registry.impl;
 
+import cat.uvic.teknos.dam.registry.Employee;
 import cat.uvic.teknos.dam.registry.Training;
 
+import java.util.Set;
+
 public class TrainingImpl implements Training {
-    private int trainingId;
-    private String title;
-    private String description;
-    private int durationHours;
-    private boolean mandatory;
-
-    @Override
-    public int getTrainingId() {
-        return trainingId;
-    }
-
-    @Override
-    public void setTrainingId(int trainingId) {
-        this.trainingId = trainingId;
-    }
 
     @Override
     public int getId() {
@@ -31,41 +19,61 @@ public class TrainingImpl implements Training {
 
     @Override
     public String getTitle() {
-        return title;
+        return "";
     }
 
     @Override
     public void setTitle(String title) {
-        this.title = title;
+
     }
 
     @Override
     public String getDescription() {
-        return description;
+        return "";
     }
 
     @Override
     public void setDescription(String description) {
-        this.description = description;
+
     }
 
     @Override
     public int getDurationHours() {
-        return durationHours;
+        return 0;
     }
 
     @Override
     public void setDurationHours(int durationHours) {
-        this.durationHours = durationHours;
+
     }
 
     @Override
     public boolean isMandatory() {
-        return mandatory;
+        return false;
     }
 
     @Override
     public void setMandatory(boolean mandatory) {
-        this.mandatory = mandatory;
+
+    }
+
+    @Override
+    public Set<Employee> getEmployees() {
+        return Set.of();
+    }
+
+    @Override
+    public void setEmployees(Set<Employee> employees) {
+
+    }
+
+    @Override
+    public void addEmployee(Employee employee) {
+
+    }
+
+    @Override
+    public void removeEmployee(Employee employee) {
+
     }
 }

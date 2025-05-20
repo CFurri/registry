@@ -3,72 +3,77 @@ package cat.uvic.teknos.dam.registry.impl;
 import cat.uvic.teknos.dam.registry.Employee;
 import cat.uvic.teknos.dam.registry.Shift;
 
-import java.util.List;
+import java.time.LocalTime;
+import java.util.Set;
 
 public class ShiftImpl implements Shift {
-    private int shiftId;
-    private String name;
-    private String startTime;
-    private String endTime;
-    private String location;
-
     @Override
-    public int getShiftId() {
-        return shiftId;
+    public int getId() {
+        return 0;
     }
 
     @Override
-    public void setShiftId(int shiftId) {
-        this.shiftId = shiftId;
+    public void setId(int id) {
+
     }
 
     @Override
     public String getName() {
-        return name;
+        return "";
     }
 
     @Override
     public void setName(String name) {
-        this.name = name;
+
     }
 
     @Override
-    public String getStartTime() {
-        return startTime;
+    public LocalTime getStartTime() {
+        return null;
     }
 
     @Override
-    public void setStartTime(String startTime) {
-        this.startTime = startTime;
+    public void setStartTime(LocalTime startTime) {
+
     }
 
     @Override
-    public String getEndTime() {
-        return endTime;
+    public LocalTime getEndTime() {
+        return null;
     }
 
     @Override
-    public void setEndTime(String endTime) {
-        this.endTime = endTime;
+    public void setEndTime(LocalTime endTime) {
+
     }
 
     @Override
     public String getLocation() {
-        return location;
+        return "";
     }
 
     @Override
     public void setLocation(String location) {
-        this.location = location;
+
     }
 
     @Override
-    public List<Employee> getEmployees() {
-        return List.of();
+    public Set<Employee> getEmployees() {
+        return Set.of();
     }
 
     @Override
-    public void setEmployees(List<Employee> employees) {
+    public void setEmployees(Set<Employee> employees) {
+
+    }
+
+    @Override
+    public void addEmployee(Employee employee) {
+
+    }
+
+    @Override
+    public void removeEmployee(Employee employee) {
 
     }
 }
