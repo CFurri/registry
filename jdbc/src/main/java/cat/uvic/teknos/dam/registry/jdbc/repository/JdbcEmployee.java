@@ -5,7 +5,8 @@ import cat.uvic.teknos.dam.registry.*;
 import java.time.LocalDate;
 import java.util.Set;
 
-public class JdbcEmployeeRepository implements EmployeeRepository {
+public class JdbcEmployee implements EmployeeRepository {
+
     @Override
     public Set<Employee> findByLastName(String lastName) {
         return Set.of();
@@ -106,3 +107,4 @@ public class JdbcEmployeeRepository implements EmployeeRepository {
         return Set.of();
     }
 }
+

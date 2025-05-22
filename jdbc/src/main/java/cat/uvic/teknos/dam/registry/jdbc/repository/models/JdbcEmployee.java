@@ -1,4 +1,4 @@
-package cat.uvic.teknos.dam.registry.jdbc.repository.model;
+package cat.uvic.teknos.dam.registry.jdbc.repository.models;
 
 import cat.uvic.teknos.dam.registry.*;
 

@@ -23,19 +23,15 @@ public class SingleConnectionDataSource implements DataSource {
     public String getDriver() {
         return driver;
     }
-
     public String getServer() {
         return server;
     }
-
     public String getDatabase() {
         return database;
     }
-
     public String getUser() {
         return user;
     }
-
     public String getPassword() {
         return password;
     }
