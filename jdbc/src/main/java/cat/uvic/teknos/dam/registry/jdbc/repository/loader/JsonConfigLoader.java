@@ -1,5 +1,7 @@
 package cat.uvic.teknos.dam.registry.jdbc.repository.loader;
 
+import org.gradle.internal.impldep.com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -11,4 +13,4 @@ public class JsonConfigLoader {
         return mapper.readValue(in, DataSourceConfig.class);
     }
 }
-}
+
