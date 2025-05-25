@@ -24,4 +24,12 @@ public interface EmployeeDetail {
     // emergency_contact_phone
     String getEmergencyContactPhone();
     void setEmergencyContactPhone(String phone);
+
+    int getEmployeeId();
+
+    double getSalary();
+
+    String getDepartment();
+
+    String getPosition();
 }

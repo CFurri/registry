@@ -35,4 +35,10 @@ public interface TimeLog {
     // is_remote
     boolean isRemote();
     void setRemote(boolean isRemote);
+
+    int getEmployeeId();
+
+    double getHoursWorked();
+
+    String getDescription();
 }
