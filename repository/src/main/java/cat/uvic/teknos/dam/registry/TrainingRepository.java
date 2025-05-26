@@ -1,5 +1,8 @@
 package cat.uvic.teknos.dam.registry;
 
+import cat.uvic.teknos.dam.model.Employee;
+import cat.uvic.teknos.dam.model.Training;
+
 import java.time.LocalDate;
 import java.util.Set;
 

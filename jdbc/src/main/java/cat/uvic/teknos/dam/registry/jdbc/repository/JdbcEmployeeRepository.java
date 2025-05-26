@@ -1,10 +1,10 @@
 package cat.uvic.teknos.dam.registry.jdbc.repository;
 
+import cat.uvic.teknos.dam.model.*;
 import cat.uvic.teknos.dam.registry.*;
-import cat.uvic.teknos.dam.registry.impl.EmployeeImpl;
+import cat.uvic.teknos.dam.model.impl.EmployeeImpl;
 import cat.uvic.teknos.dam.registry.jdbc.repository.datasource.DataSource;
 import cat.uvic.teknos.dam.registry.jdbc.repository.exceptions.CrudException;
-import cat.uvic.teknos.dam.registry.jdbc.repository.exceptions.DataSourceException;
 
 import java.sql.*;
 import java.time.LocalDate;

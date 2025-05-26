@@ -1,7 +1,11 @@
 package cat.uvic.teknos.dam.registry;
 
+
+import cat.uvic.teknos.dam.model.*;
+
 import java.time.LocalDate;
 import java.util.Set;
+
 
 public interface EmployeeRepository extends Repository<Integer, Employee> {
     // Métodos básicos para Employee

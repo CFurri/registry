@@ -1,5 +1,6 @@
 package cat.uvic.teknos.dam.registry.jdbc.repository;
 
+import cat.uvic.teknos.dam.model.*;
 import cat.uvic.teknos.dam.registry.*;
 
 import java.time.LocalDate;

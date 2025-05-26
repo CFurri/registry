@@ -1,5 +1,8 @@
 package cat.uvic.teknos.dam.registry;
 
+import cat.uvic.teknos.dam.model.Employee;
+import cat.uvic.teknos.dam.model.Shift;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Set;
