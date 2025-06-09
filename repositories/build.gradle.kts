@@ -2,6 +2,7 @@ plugins {
     id("buildlogic.java-common-conventions")
 }
 
-dependencies {
 
+dependencies {
+    implementation(project(":model"))
 }

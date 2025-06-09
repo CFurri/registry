@@ -7,14 +7,18 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":model"))
+    implementation(project(":repositories"))
+    implementation(project(":jdbc"))
+    implementation(project(":jpa"))
+    
+
     implementation("org.apache.commons:commons-text") //llibreria que té moltes utilitats
     implementation("com.mysql:mysql-connector-j:9.3.0")
-    implementation(project(":model"))
-    implementation(project(":repository"))
     implementation("com.github.freva:ascii-table:1.8.0")
 }
 
 application {
     // Define the main class for the application.
-    mainClass = "org.example.app.App"
+    mainClass = "cat.uvic.teknos.registry.app.App"
 }
