@@ -21,7 +21,7 @@ public class App {
         try {
             printBanner();
 
-            // Initialize the Dependency Injection manager
+            // Initialize the Dependency Injection Manager
             diManager = new DIManager();
 
             // Get singleton factory instances
