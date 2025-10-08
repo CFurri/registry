@@ -1,48 +1,44 @@
 package cat.uvic.teknos.registry.server;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+
+import cat.uvic.teknos.registry.server.controllers.EmployeeController;
+import rawhttp.core.RawHttp;
+import rawhttp.core.RawHttpRequest;
+import rawhttp.core.RawHttpResponse;
+
+import java.io.*;
 import java.net.ServerSocket;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Scanner;
+import java.net.Socket;
+import java.sql.SQLOutput;
 
+//Gestiona el ServerSocket, accepta connexions i crea un ClientHandler o passa la petició al RequestRouter.
 public class Server {
-    public static void main(String[] args) throws IOException {
 
-        var server = new ServerSocket(5001);
-        System.out.println("Servidor iniciat al port 5001. Esperant connexions...");
+    public void start() {
+        try (ServerSocket server = new ServerSocket(8083)) {
+            RawHttp http = new RawHttp();
+            System.out.println("Server started on port 8083");
 
-        var client = server.accept();
-        System.out.println("Client connectat!");
+            while(true){
+                Socket client = server.accept();
+                System.out.println("Client connected: "+ client);
 
-        var inputStream = new Scanner(new InputStreamReader(client.getInputStream()));
-        var outputStream = new PrintWriter(client.getOutputStream());
+                try {
+                    RawHttpRequest request = http.parseRequest(client.getInputStream());
+                    String path = request.getUri().getPath();
 
-        var request = "";
-        while(!(request = inputStream.nextLine().toLowerCase()).equals("exit")){
-            var response = "";
-            if (request.equals("time")){
-                LocalTime localTime = LocalDateTime.now().toLocalTime();
-                response = localTime.toString();
-            }
-            else if (request.equals("date")){
-                LocalDate localDate = LocalDate.now();
-                response = localDate.toString();
+                    RequestRouter router = new RequestRouter(new EmployeeController());
+                    RawHttpResponse<?> response = router.route(request);
+                    response.writeTo(client.getOutputStream());
 
-            }
-            else {
-                response = "Invalid request";
+                    client.close();
+                }catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
-            outputStream.println(response);
-            outputStream.flush();
+        } catch (IOException e){
+            e.printStackTrace();
         }
-        outputStream.println("Bye bye");
-
-        client.close();
-        server.close();
     }
 }
