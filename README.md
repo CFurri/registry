@@ -95,9 +95,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Versions
 
-| Version | Description   |
-|---------|---------------|
-| 1.0.0   | First edition |
+| Version | Description           |
+|---------|-----------------------|
+| 1.0.0   | First edition         |
+| 1.1.0   | Server-Client edition |
 
 ## License
 
