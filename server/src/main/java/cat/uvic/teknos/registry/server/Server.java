@@ -1,44 +1,49 @@
 package cat.uvic.teknos.registry.server;
 
+import rawhttp.core.server.TcpRawHttpServer;
 
-import cat.uvic.teknos.registry.server.controllers.EmployeeController;
-import rawhttp.core.RawHttp;
-import rawhttp.core.RawHttpRequest;
-import rawhttp.core.RawHttpResponse;
+import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.sql.SQLOutput;
-
-//Gestiona el ServerSocket, accepta connexions i crea un ClientHandler o passa la petició al RequestRouter.
+/**
+ * Initiates the server socket, manages client connections, and starts listening for requests.
+ */
 public class Server {
 
+    private final int port;
+    private final RawHttpService router;
+    private final ExecutorService executor; // Encara el gestionem nosaltres
+
+    public Server(int port, RawHttpService router) {
+        this.port = port;
+        this.router = router;
+        this.executor = Executors.newFixedThreadPool(4);
+    }
+
     public void start() {
-        try (ServerSocket server = new ServerSocket(8083)) {
-            RawHttp http = new RawHttp();
-            System.out.println("Server started on port 8083");
+        System.out.println("Server core starting on port " + port);
 
-            while(true){
-                Socket client = server.accept();
-                System.out.println("Client connected: "+ client);
+        // CANVI CLAU: Passem el port al constructor
+        TcpRawHttpServer server = new TcpRawHttpServer(port);
 
-                try {
-                    RawHttpRequest request = http.parseRequest(client.getInputStream());
-                    String path = request.getUri().getPath();
+        try {
+            // CANVI CLAU: El mètode start() només necessita el router.
+            // L'executor de fils el gestionarà internament el servidor.
+            server.start(router);
 
-                    RequestRouter router = new RequestRouter(new EmployeeController());
-                    RawHttpResponse<?> response = router.route(request);
-                    response.writeTo(client.getOutputStream());
+            System.out.println("Server is now listening. Press ENTER to stop.");
 
-                    client.close();
-                }catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            // Bloqueja el fil principal.
+            System.in.read();
 
-        } catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            // Atura el servidor i tanca el nostre executor.
+            System.out.println("Stopping server...");
+            server.stop();
+            executor.shutdown(); // Important tancar-lo encara que el servidor no l'usi directament
         }
     }
 }
