@@ -4,7 +4,7 @@ import cat.uvic.teknos.registry.app.DIManager;
 
 public class App {
 
-    private static final int PORT = 8080;
+    private static final int PORT = 9000;
 
     public static void main(String[] args) {
         DIManager diManager = null;

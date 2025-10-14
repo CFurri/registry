@@ -1,53 +1,58 @@
 package cat.uvic.teknos.registry.client;
 
 import cat.uvic.teknos.registry.client.dto.EmployeeDTO;
-import com.fasterxml.jackson.core.type.TypeReference; // Import important!
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule; // Per a LocalDate
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import rawhttp.core.RawHttp;
+import rawhttp.core.RawHttpResponse;
+
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class Client {
 
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper; // El nostre traductor de JSON
-    private final String baseUrl = "http://localhost:8080";
+    private final String host = "localhost";
+    private final int port = 8080;
+    private final ObjectMapper objectMapper;
+    private final RawHttp http;
 
     public Client() {
-        this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
-        // Registrem el mòdul per a poder treballar amb dates com LocalDate
         this.objectMapper.registerModule(new JavaTimeModule());
+        this.http = new RawHttp();
     }
 
-    // Aquest mètode retorna el JSON cru (pot ser útil per depurar)
-    public String getAllEmployeesAsString() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/api/employees"))
-                .GET()
-                .build();
+    public List<EmployeeDTO> getAllEmployees() {
+        // Creem un nou Socket per a cada petició
+        try (Socket socket = new Socket(host, port)) {
+            PrintWriter writer = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            // Pas 1: Escrivim la petició HTTP a mà a l'OutputStream del Socket
+            writer.println("GET /api/employees HTTP/1.1");
+            writer.println("Host: " + host);
+            writer.println("Connection: close");
+            writer.println(); // Línia final en blanc, crucial!
 
-        if (response.statusCode() == 200) {
-            return response.body();
-        } else {
-            System.err.println("Error: " + response.statusCode());
+            // Pas 2: rawhttp llegeix la resposta des de l'InputStream del Socket
+            RawHttpResponse<?> response = http.parseResponse(socket.getInputStream());
+
+            // Pas 3: Processem la resposta com abans
+            if (response.getStatusCode() == 200) {
+                String jsonBody = response.getBody().get().toString(); // rawhttp ens dona el cos
+                return objectMapper.readValue(jsonBody, new TypeReference<List<EmployeeDTO>>() {});
+            } else {
+                System.err.println("Error del servidor: " + response.getStatusCode());
+                return null;
+            }
+        } catch (IOException e) {
+            System.err.println("Error de connexió amb el servidor: " + e.getMessage());
             return null;
         }
     }
 
-    // NOU MÈTODE: Aquest retorna la llista d'objectes DTO ja traduïda!
-    public List<EmployeeDTO> getAllEmployees() throws IOException, InterruptedException {
-        String jsonBody = getAllEmployeesAsString(); // Reutilitzem el mètode anterior
-        if (jsonBody != null) {
-            // La màgia de Jackson: convertim el String JSON a una Llista d'EmployeeDTO
-            return objectMapper.readValue(jsonBody, new TypeReference<List<EmployeeDTO>>() {});
-        }
-        return null;
-    }
+    // Aquí implementaries els mètodes per a POST, PUT, DELETE, etc.
 }
