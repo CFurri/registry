@@ -18,8 +18,10 @@ import rawhttp.core.RawHttpResponse;
 import rawhttp.core.body.StringBody;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class EmployeeController implements RawHttpService {
 
@@ -33,7 +35,8 @@ public class EmployeeController implements RawHttpService {
         this.employeeRepository = repositoryFactory.getEmployeeRepository();
         this.modelFactory = diManager.get("model_factory");
         this.objectMapper = new ObjectMapper();
-        this.http = new RawHttp(); // Inicialitzem aquí
+        this.objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        this.http = new RawHttp(); // Inicialitzem l'instància
     }
 
     @Override
@@ -69,6 +72,20 @@ public class EmployeeController implements RawHttpService {
         return Optional.empty();
     }
 
+    private EmployeeDTO toDTO(Employee employee) {
+        if (employee == null) return null;
+
+        EmployeeDTO dto = new EmployeeDTO();
+
+        dto.setId(employee.getId());
+        dto.setFirstName(employee.getFirstName());
+        dto.setLastName(employee.getLastName());
+        dto.setEmail(employee.getEmail());
+        dto.setPhoneNumber(employee.getPhoneNumber());
+        // dto.setHireDate(employee.getHireDate()); // Assegura't que els tipus coincideixin
+        return dto;
+    }
+
     // CORRECCIÓ: Mètode per a respostes JSON adaptat a la versió 2.6.0
     private RawHttpResponse<?> jsonResponse(int status, String reason, Object data) {
         try {
@@ -91,7 +108,14 @@ public class EmployeeController implements RawHttpService {
 
     private Optional<RawHttpResponse<?>> handleGetAllEmployees() {
         Set<Employee> employees = employeeRepository.getAll();
-        return Optional.of(jsonResponse(200, "OK", employees));
+
+        // TRADUÏM la llista de Models a una llista de DTOs
+        List<EmployeeDTO> employeeDTOs = employees.stream()
+                .map(this::toDTO) // Utilitzem el nostre nou mètode
+                .collect(Collectors.toList());
+
+        // Enviem la llista de DTOs, que sí que és segura per serialitzar
+        return Optional.of(jsonResponse(200, "OK", employeeDTOs));
     }
 
     private Optional<RawHttpResponse<?>> handleGetEmployeeById(int id) {
@@ -101,8 +125,12 @@ public class EmployeeController implements RawHttpService {
             throw new NotFoundException("Employee with ID " + id + " not found.");
         }
 
-        return Optional.of(jsonResponse(200, "OK", employee));
+        // TRADUÏM el model a DTO abans d'enviar-lo
+        EmployeeDTO dto = toDTO(employee);
+
+        return Optional.of(jsonResponse(200, "OK", dto));
     }
+
 
     private Optional<RawHttpResponse<?>> handlePostEmployee(RawHttpRequest request) {
         if (request.getBody().isEmpty()) {
@@ -122,7 +150,8 @@ public class EmployeeController implements RawHttpService {
 
             employeeRepository.save(employeeToSave);
 
-            return Optional.of(jsonResponse(201, "Created", employeeToSave));
+            EmployeeDTO createdDTO = toDTO(employeeToSave); // Convertim a DTO abans d'enviar
+            return Optional.of(jsonResponse(201, "Created", createdDTO));
         } catch (IOException e) {
             throw new BadRequestException("Invalid JSON format or missing fields.", e);
         } catch (RuntimeException e) {
@@ -164,7 +193,8 @@ public class EmployeeController implements RawHttpService {
 
             employeeRepository.save(employeeToUpdate);
 
-            return Optional.of(jsonResponse(200, "OK", employeeToUpdate));
+            EmployeeDTO updatedDTO = toDTO(employeeToUpdate); // Convertim a DTO abans d'enviar
+            return Optional.of(jsonResponse(200, "OK", updatedDTO));
         } catch (IOException e) {
             throw new BadRequestException("Invalid JSON or data: " + e.getMessage(), e);
         }

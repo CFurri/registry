@@ -1,39 +1,34 @@
 package cat.uvic.teknos.registry.server;
 
 import cat.uvic.teknos.registry.app.DIManager;
+import cat.uvic.teknos.registry.repositories.RepositoryFactory;
+import cat.uvic.teknos.registry.jdbc.repositories.JdbcRepositoryFactory; // Importa la classe concreta
 
 public class App {
 
     private static final int PORT = 9000;
 
     public static void main(String[] args) {
-        DIManager diManager = null;
-
         try {
-            // 1. Inicialització del sistema DI
-            diManager = new DIManager();
+            // 1. Creem el DIManager. Ell carregarà automàticament "di.properties".
+            DIManager diManager = new DIManager();
 
-            // 2. Creació del Router
             RawHttpService router = new RequestRouter(diManager);
 
-            // 3. Creació de la Classe Server (el socket manager)
+            // 3. Creació del Servidor
             Server server = new Server(PORT, router);
 
+            // 4. Comprovació: Demanem al DIManager que fabriqui el que digui
+            //    el fitxer de propietats. Ell ho farà tot sol.
             String repoType = diManager.get("repository_factory").getClass().getSimpleName();
             System.out.println("Registry Back Office Server initialized (Repo: " + repoType + ")");
 
-            // 4. Llançament del Servidor
+            // 5. Llançament del Servidor
             server.start();
 
         } catch (Exception e) {
-            System.err.println("FATAL ERROR: Server failed to start.");
+            System.err.println("FATAL ERROR: Could not start the server.");
             e.printStackTrace();
-        } finally {
-            // 5. Tancar recursos (encara responsabilitat de l'App)
-            if (diManager != null) {
-                diManager.close();
-            }
-            System.out.println("Application shut down.");
         }
     }
 }

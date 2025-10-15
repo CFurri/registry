@@ -32,6 +32,17 @@ public class DIManager {
             throw new DIException("Failed to load properties file: " + PROPERTIES_FILE, e);
         }
     }
+        // Afegit mètode put() per fer funcionar app:server <---
+    /**
+     * Manually registers an already created instance as a singleton.
+     * This is useful for objects that require complex construction.
+     *
+     * @param key The key to register the instance under.
+     * @param instance The object instance to register.
+     */
+    public void put(String key, Object instance) {
+        instances.put(key, instance);
+    }
 
     /**
      * Gets a shared singleton instance of the class specified by the property key.

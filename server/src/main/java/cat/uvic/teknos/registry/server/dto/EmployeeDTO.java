@@ -8,7 +8,7 @@ import java.time.LocalDate;
  * S'utilitza per rebre i enviar dades a través de l'API en format JSON.
  */
 public class EmployeeDTO {
-
+    private int id;
     private String firstName;
     private String lastName;
     private String email;
@@ -20,6 +20,9 @@ public class EmployeeDTO {
     }
 
     // Getters i Setters (essencials perquè la llibreria Jackson pugui llegir i escriure les propietats)
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+
     public String getFirstName() {
         return firstName;
     }

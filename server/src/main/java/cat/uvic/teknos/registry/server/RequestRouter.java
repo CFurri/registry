@@ -47,13 +47,16 @@ public class RequestRouter implements RawHttpService {
             return Optional.empty();
 
         } catch (NotFoundException e) {
+            e.printStackTrace(); // <--- AFEGEIX AIXÒ
             return Optional.of(errorResponse(404, "Not Found", e.getMessage()));
         } catch (ConflictException e) {
+            e.printStackTrace(); // <--- AFEGEIX AIXÒ
             return Optional.of(errorResponse(409, "Conflict", e.getMessage()));
         } catch (BadRequestException e) {
+            e.printStackTrace(); // <--- AFEGEIX AIXÒ
             return Optional.of(errorResponse(400, "Bad Request", e.getMessage()));
         } catch (Exception e) {
-            // Gestionar qualsevol altre error no previst com un 500
+            // Aquest ja ho tenia, perfecte
             e.printStackTrace();
             return Optional.of(errorResponse(500, "Internal Server Error", "An unexpected error occurred."));
         }

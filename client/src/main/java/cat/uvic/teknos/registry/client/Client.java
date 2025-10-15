@@ -16,7 +16,7 @@ import java.util.List;
 public class Client {
 
     private final String host = "localhost";
-    private final int port = 8080;
+    private final int port = 9000;
     private final ObjectMapper objectMapper;
     private final RawHttp http;
 
@@ -35,7 +35,11 @@ public class Client {
             writer.println("GET /api/employees HTTP/1.1");
             writer.println("Host: " + host);
             writer.println("Connection: close");
-            writer.println(); // Línia final en blanc, crucial!
+            writer.println(); // Línia final en blanc
+
+            // PAS CLAU: NOTIFIQUEM AL SERVIDOR QUE HEM ACABAT D'ESCRIURE
+            socket.shutdownOutput();
+            System.out.println("Petició enviada. Esperant resposta...");
 
             // Pas 2: rawhttp llegeix la resposta des de l'InputStream del Socket
             RawHttpResponse<?> response = http.parseResponse(socket.getInputStream());
@@ -54,5 +58,5 @@ public class Client {
         }
     }
 
-    // Aquí implementaries els mètodes per a POST, PUT, DELETE, etc.
+    // Aquí implementariem els mètodes per a POST, PUT, DELETE, etc.
 }
