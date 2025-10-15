@@ -24,7 +24,7 @@ public class ClientHandler implements Runnable {
     public void run() {
         try (clientSocket) {
             // Pas 1: Llegir la petició del client utilitzant el Socket's InputStream
-            RawHttpRequest request = http.parseRequest(clientSocket.getInputStream());
+            RawHttpRequest request = http.parseRequest(clientSocket.getInputStream()).eagerly();
 
             // Pas 2: Utilitzar el router per obtenir la resposta
             RawHttpResponse<?> response = router.route(request)

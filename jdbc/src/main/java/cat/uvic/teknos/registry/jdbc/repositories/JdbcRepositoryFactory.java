@@ -26,4 +26,6 @@ public class JdbcRepositoryFactory implements RepositoryFactory {
         return new JdbcTrainingRepository(dataSource);
     }
 
+
+
 }

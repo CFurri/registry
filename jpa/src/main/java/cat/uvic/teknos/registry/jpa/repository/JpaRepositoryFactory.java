@@ -24,4 +24,6 @@ public class JpaRepositoryFactory implements RepositoryFactory {
     public TrainingRepository getTrainingRepository() {
         return new JpaTrainingRepository(emf);
     }
+
+
 }

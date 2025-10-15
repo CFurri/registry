@@ -11,10 +11,8 @@ import cat.uvic.teknos.registry.server.exceptions.NotFoundException;
 import rawhttp.core.RawHttp;
 import rawhttp.core.RawHttpRequest;
 import rawhttp.core.RawHttpResponse;
-import rawhttp.core.RawHttpHeaders;
 import rawhttp.core.body.StringBody;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**

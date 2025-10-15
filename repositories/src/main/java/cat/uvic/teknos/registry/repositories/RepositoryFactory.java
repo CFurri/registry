@@ -4,4 +4,5 @@ public interface RepositoryFactory {
     EmployeeRepository getEmployeeRepository();
     ShiftRepository getShiftRepository();
     TrainingRepository getTrainingRepository();
+
 }
