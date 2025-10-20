@@ -33,8 +33,14 @@ public class ClientHandler implements Runnable {
             // Pas 3: Escriure la resposta al client utilitzant el Socket's OutputStream
             response.writeTo(clientSocket.getOutputStream());
 
+            System.out.println("Petició rebuda: " + request.getStartLine());
+
+
         } catch (IOException e) {
             System.err.println("Error de comunicació amb el client: " + e.getMessage());
+            try {
+                http.parseResponse("HTTP/1.1 500 Internal Server Error\r\n\r\n").writeTo(clientSocket.getOutputStream());
+            } catch (IOException ignored) {}
         }
     }
 }

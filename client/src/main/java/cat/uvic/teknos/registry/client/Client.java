@@ -10,6 +10,7 @@ import rawhttp.core.RawHttpResponse;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Scanner;
 
@@ -21,7 +22,7 @@ public class Client {
     private final RawHttp http;
     private final Scanner scanner;
 
-    // AQUESTA ÉS LA PART NOVA: guardem el socket com un membre de la classe
+
     private Socket socket;
 
     public Client() {
@@ -50,6 +51,7 @@ public class Client {
         }
     }
 
+
     private void runMenu() {
         while (true) {
             printMenu();
@@ -67,6 +69,12 @@ public class Client {
                     break;
                 case "3":
                     handleDeleteEmployee();
+                    break;
+                case "4":
+                    handleUpdateEmployee();
+                    break;
+                case "5":
+                    handleGetEmployeeById();
                     break;
                 default:
                     System.out.println("Opció no vàlida.");
@@ -91,7 +99,7 @@ public class Client {
                 System.out.println("No s'han trobat empleats.");
             }
         } catch (IOException e) {
-            System.err.println("Error durant la comunicació amb el servidor: " + e.getMessage());
+            System.err.println("Error durant la comunicació amb el servidor (" + e.getClass().getSimpleName() + "): " + e.getMessage());
         }
     }
 
@@ -150,32 +158,99 @@ public class Client {
         }
     }
 
+    private void handleUpdateEmployee() {
+        System.out.println("\n--- Actualitzar Empleat ---");
+        try {
+            // 1. Demanem l'ID de l'empleat a modificar
+            System.out.print("Introdueix l'ID de l'empleat que vols modificar: ");
+            int id = Integer.parseInt(scanner.nextLine());
+
+            // 2. Creem un DTO buit i li posem l'ID
+            // (Seria ideal primer comprovar si l'ID existeix amb un 'getById',
+            // però per ara ho fem directe)
+            EmployeeDTO employeeToUpdate = new EmployeeDTO();
+            employeeToUpdate.setId(id);
+
+            // 3. Demanem la resta de dades
+            System.out.print("Introdueix el nou nom (deixa en blanc per no canviar): ");
+            String firstName = scanner.nextLine();
+            if (!firstName.isEmpty()) {
+                employeeToUpdate.setFirstName(firstName);
+            }
+
+            System.out.print("Introdueix el nou cognom (deixa en blanc per no canviar): ");
+            String lastName = scanner.nextLine();
+            if (!lastName.isEmpty()) {
+                employeeToUpdate.setLastName(lastName);
+            }
+
+            System.out.print("Introdueix el nou email (deixa en blanc per no canviar): ");
+            String email = scanner.nextLine();
+            if (!email.isEmpty()) {
+                employeeToUpdate.setEmail(email);
+            }
+
+            System.out.print("Introdueix el nou telèfon (deixa en blanc per no canviar): ");
+            String phone = scanner.nextLine();
+            if (!phone.isEmpty()) {
+                employeeToUpdate.setPhoneNumber(phone);
+            }
+
+            // 4. Cridem al mètode de comunicació
+            if (updateEmployee(employeeToUpdate)) {
+                System.out.println("Empleat actualitzat amb èxit!");
+            } else {
+                System.out.println("No s'ha pogut actualitzar l'empleat. Pot ser que l'ID no existeixi.");
+            }
+
+        } catch (NumberFormatException e) {
+            System.err.println("Error: L'ID ha de ser un número.");
+        } catch (Exception e) {
+            System.err.println("Ha ocorregut un error inesperat: " + e.getMessage());
+        }
+    }
+
+    private void handleGetEmployeeById() {
+        System.out.println("\n--- Veure Empleat per ID ---");
+        System.out.print("Introdueix l'ID de l'empleat: ");
+        try {
+            int id = Integer.parseInt(scanner.nextLine());
+            EmployeeDTO employee = getEmployeeById(id);
+            if (employee != null) {
+                System.out.printf("Id: %d, Nom: %s %s, Email: %s, Telèfon: %s\n",
+                        employee.getId(), employee.getFirstName(), employee.getLastName(),
+                        employee.getEmail(), employee.getPhoneNumber());
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Error: L'ID ha de ser un número.");
+        } catch (IOException e) {
+            System.err.println("Error de connexió amb el servidor: " + e.getMessage());
+        }
+    }
+
 
     // --- MÈTODES DE COMUNICACIÓ AMB EL SERVIDOR ---
 
     private List<EmployeeDTO> getAllEmployees() throws IOException {
-        if (socket == null || socket.isClosed()) {
-            throw new IOException("No estàs connectat al servidor.");
-        }
-
         System.out.println("Enviant petició GET /api/employees...");
-        RawHttpRequest request = http.parseRequest(
-                "GET /api/employees HTTP/1.1\r\n" +
-                        "Host: " + host + "\r\n" +
-                        "Connection: keep-alive\r\n" + // Important: mantenim la connexió oberta
-                        "\r\n");
 
-        request.writeTo(socket.getOutputStream());
+        try (Socket socket = new Socket(host, port)) {  // <--- nou socket cada vegada
+            RawHttpRequest request = http.parseRequest(
+                    "GET /api/employees HTTP/1.1\r\n" +
+                            "Host: " + host + "\r\n" +
+                            "Connection: close\r\n" +
+                            "\r\n");
 
-        // AFEGIM .eagerly() com a l'exemple del professor
-        RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
+            request.writeTo(socket.getOutputStream());
+            RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
 
-        if (response.getStatusCode() == 200) {
-            String jsonBody = response.getBody().orElseThrow().toString();
-            return objectMapper.readValue(jsonBody, new TypeReference<>() {});
-        } else {
-            System.err.println("Error del servidor: " + response.getStatusCode());
-            return null;
+            if (response.getStatusCode() == 200) {
+                String jsonBody = response.getBody().orElseThrow().toString();
+                return objectMapper.readValue(jsonBody, new TypeReference<>() {});
+            } else {
+                System.err.println("Error del servidor: " + response.getStatusCode());
+                return null;
+            }
         }
     }
 
@@ -248,6 +323,98 @@ public class Client {
     }
 
 
+    /**
+     * Envia una petició PUT al servidor per actualitzar un empleat existent.
+     * Retorna 'true' si l'operació ha tingut èxit (el servidor respon 200 o 204),
+     * 'false' en cas contrari.
+     *
+     * @param employee L'objecte DTO amb les dades a actualitzar (ha de contenir l'ID).
+     * @return true si l'actualització ha tingut èxit, false altrament.
+     * @throws IOException Si hi ha un error de serialització o de xarxa.
+     */
+    private boolean updateEmployee(EmployeeDTO employee) throws IOException {
+        // 1. Validació bàsica
+        if (employee == null || employee.getId() <= 0) {
+            System.err.println("Error intern: L'employee a actualitzar és invàlid o no té ID.");
+            return false;
+        }
+
+        // 2. Preparem el path i el cos de la petició
+        String path = "/api/employees/" + employee.getId();
+        System.out.println("Enviant petició PUT a " + path + "...");
+
+        // Serialitzem l'objecte a JSON
+        String jsonBody = objectMapper.writeValueAsString(employee);
+
+        // Calculem la mida del cos EN BYTES (importantíssim)
+        byte[] jsonBodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
+        int contentLength = jsonBodyBytes.length;
+
+        // 3. Construïm la petició HTTP completa (headers + cos)
+        String requestString = "PUT " + path + " HTTP/1.1\r\n" +
+                "Host: " + host + "\r\n" +
+                "Connection: close\r\n" +
+                "Content-Type: application/json\r\n" +
+                "Content-Length: " + contentLength + "\r\n" +
+                "\r\n" + // Línia en blanc VITAL
+                jsonBody; // El cos
+
+        // Parsejem la petició
+        RawHttpRequest request = http.parseRequest(requestString);
+
+        // 4. Obrim socket, enviem petició i rebem resposta
+        // Fem servir el mateix patró robust "un socket per petició"
+        try (Socket socket = new Socket(host, port)) {
+
+            request.writeTo(socket.getOutputStream());
+
+            RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
+
+            // 5. Comprovem el codi de resposta
+            // Un PUT exitós pot retornar 200 (OK) o 204 (No Content)
+            if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+                return true;
+            } else {
+                // Gestionem errors comuns com 404 (No trobat)
+                System.err.println("Error del servidor: " + response.getStatusCode() + " " + response.getStartLine().getReason());
+                return false;
+            }
+        }
+        // Les IOException (com JsonProcessingException o de xarxa) es propagaran
+        // i seran capturades pel 'handleUpdateEmployee'.
+    }
+
+
+    private EmployeeDTO getEmployeeById(int id) throws IOException {
+        String path = "/api/employees/" + id;
+        try (Socket socket = new Socket(host, port)) {
+            RawHttpRequest request = http.parseRequest(
+                    "GET " + path + " HTTP/1.1\r\n" +
+                            "Host: " + host + "\r\n" +
+                            "Connection: close\r\n" +
+                            "\r\n"
+            );
+
+            request.writeTo(socket.getOutputStream());
+            RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
+
+            if (response.getStatusCode() == 200) {
+                String jsonBody = response.getBody().orElseThrow().toString();
+                return objectMapper.readValue(jsonBody, EmployeeDTO.class);
+            } else if (response.getStatusCode() == 404) {
+                System.err.println("Empleat amb ID " + id + " no trobat.");
+                return null;
+            } else {
+                System.err.println("Error del servidor: " + response.getStatusCode() + " " + response.getStartLine().getReason());
+                return null;
+            }
+        }
+    }
+
+
+
+
+
     // --- MÈTODES DE GESTIÓ DE LA CONNEXIÓ ---
 
     private void connect() throws IOException {
@@ -274,6 +441,8 @@ public class Client {
         System.out.println("1. Llistar tots els empleats");
         System.out.println("2. Afegir un nou empleat");
         System.out.println("3. Esborrar un empleat");
+        System.out.println("4. Actualitzar un empleat");
+        System.out.println("5. Veure empleat per ID");
         System.out.println("0. Sortir");
         System.out.print("Tria una opció: ");
     }
