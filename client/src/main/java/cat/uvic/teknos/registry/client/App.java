@@ -8,7 +8,5 @@ public class App {
 
         // 2. Engeguem el seu bucle principal
         client.start();
-
-
     }
 }

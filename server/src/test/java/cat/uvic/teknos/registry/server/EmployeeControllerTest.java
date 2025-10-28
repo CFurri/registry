@@ -253,9 +253,11 @@ public class EmployeeControllerTest {
         when(mockRepo.getAll()).thenReturn(Set.of(e1, e2));
 
         RawHttpRequest request = http.parseRequest(
-                "GET /api/employees HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "\r\n"
+                """
+                        GET /api/employees HTTP/1.1\r
+                        Host: localhost\r
+                        \r
+                        """
         ).eagerly();
 
         Optional<RawHttpResponse<?>> responseOpt = controller.route(request);

@@ -1,8 +1,6 @@
 package cat.uvic.teknos.registry.server;
 
 import cat.uvic.teknos.registry.app.DIManager;
-import cat.uvic.teknos.registry.repositories.RepositoryFactory;
-import cat.uvic.teknos.registry.jdbc.repositories.JdbcRepositoryFactory; // Importa la classe concreta
 
 public class App {
 
