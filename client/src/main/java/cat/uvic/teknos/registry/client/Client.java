@@ -14,6 +14,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Scanner;
 
+//Practica2 imports:
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
+
 public class Client {
 
     private final String host = "localhost";
@@ -21,6 +28,11 @@ public class Client {
     private final ObjectMapper objectMapper;
     private final RawHttp http;
     private final Scanner scanner;
+
+    // Nous camps per inactivitat
+    private ScheduledExecutorService inactivityTimer;
+    private ScheduledFuture<?> inactivityTask;
+    private final long INACTIVITY_TIMEOUT_MINUTES = 2;
 
 
     private Socket socket;
@@ -37,17 +49,21 @@ public class Client {
      */
     public void start() {
         try {
-            // 1. Connectem UN SOL COP a l'inici
-            connect();
+            inactivityTimer = Executors.newSingleThreadScheduledExecutor();
+            resetInactivityTimer(); //Programem la primera desconnexió
 
-            // 2. Comença el bucle del menú
+            // Comença el bucle del menú
             runMenu();
 
-        } catch (IOException e) {
-            System.err.println("No s'ha pogut connectar al servidor: " + e.getMessage());
         } finally {
-            // 3. Desconnectem UN SOL COP al final, passi el que passi
-            disconnect();
+            // Tanquem recursos quan 'runMenu' acaba
+            if (inactivityTimer != null){
+                inactivityTimer.shutdownNow();
+            }
+            if (scanner != null){
+                scanner.close();
+            }
+            System.out.println("Fins aviat!");
         }
     }
 
@@ -57,6 +73,7 @@ public class Client {
             printMenu();
             String choice = scanner.nextLine();
             if ("0".equals(choice)) {
+                sendDisconnectRequest(); //P2-Envia missatge de desconnexió
                 break; // Surt del bucle per finalitzar el programa
             }
 
@@ -80,6 +97,10 @@ public class Client {
                     System.out.println("Opció no vàlida.");
                     break;
             }
+            //P2
+            // Després de cada acció de l'usuari, reiniciem el comptador
+            System.out.println("[CLIENT] Acció registrada, reiniciant timer d'inactivitat (2 min).");
+            resetInactivityTimer();
         }
     }
 
@@ -446,4 +467,57 @@ public class Client {
         System.out.println("0. Sortir");
         System.out.print("Tria una opció: ");
     }
+
+    // --- NOUS MÈTODES D'INACTIVITAT ---
+
+    // Aquest mètode s'executarà si passen 2 minuts
+    private void handleInactivity() {
+        System.out.println("\n[CLIENT] Inactivitat detectada (2 min).");
+        sendDisconnectRequest();
+
+        // Forcem la sortida del client
+        System.out.println("[CLIENT] Tancant per inactivitat.");
+        System.exit(0);
+    }
+
+    // Reinicia el temporitzador
+    private void resetInactivityTimer() {
+        // Si hi ha una tasca programada, la cancelem
+        if (inactivityTask != null) {
+            inactivityTask.cancel(false);
+        }
+        // Programem la nova tasca de desconnexió
+        inactivityTask = inactivityTimer.schedule(
+                this::handleInactivity, // Mètode a executar
+                INACTIVITY_TIMEOUT_MINUTES,
+                TimeUnit.MINUTES
+        );
+    }
+
+    // Lògica per enviar el missatge 'disconnect'
+    private void sendDisconnectRequest() {
+        System.out.println("[CLIENT] Notificant al servidor la desconnexió...");
+        try (Socket socket = new Socket(host, port)) {
+            // Creem la petició especial POST /api/disconnect
+            RawHttpRequest request = http.parseRequest(
+                    "POST /api/disconnect HTTP/1.1\r\n" +
+                            "Host: " + host + "\r\n" +
+                            "Connection: close\r\n" +
+                            "\r\n");
+
+            request.writeTo(socket.getOutputStream());
+
+            // Esperem l'ACK
+            RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
+            if (response.getStatusCode() == 200) {
+                System.out.println("[CLIENT] ACK rebut del servidor.");
+            } else {
+                System.err.println("[CLIENT] Resposta inesperada del servidor a la desconnexió: " + response.getStatusCode());
+            }
+
+        } catch (IOException e) {
+            System.err.println("[CLIENT] No s'ha pogut notificar al servidor: " + e.getMessage());
+        }
+    }
+    // --- FI NOUS MÈTODES ---
 }
