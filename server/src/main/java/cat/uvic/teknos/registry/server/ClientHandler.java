@@ -14,15 +14,24 @@ public class ClientHandler implements Runnable {
     private final Router router;
     private final RawHttp http;
 
-    public ClientHandler(Socket socket, Router router) {
+    //Pràctica 2 - Nou camp
+    private final Server server; //Fa referència al servidor principal
+
+    // P2 (canvi al constructor +argument)
+    public ClientHandler(Socket socket, Router router, Server server) {
         this.clientSocket = socket;
         this.router = router;
+        this.server = server; //Aquest és el +1
         this.http = new RawHttp();
     }
 
     @Override
     public void run() {
         try (clientSocket) {
+
+            //P2 Incrementar comptador
+            server.incrementClientCount();
+
             // Pas 1: Llegir la petició del client utilitzant el Socket's InputStream
             RawHttpRequest request = http.parseRequest(clientSocket.getInputStream()).eagerly();
 
@@ -41,6 +50,9 @@ public class ClientHandler implements Runnable {
             try {
                 http.parseResponse("HTTP/1.1 500 Internal Server Error\r\n\r\n").writeTo(clientSocket.getOutputStream());
             } catch (IOException ignored) {}
+        } finally {
+            //P2 Nou --> Restar comptador <--
+            server.decrementClientCount();
         }
     }
 }
