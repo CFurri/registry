@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+                                 http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+
+    <persistence-unit name="registry_test" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <!-- Classes JPA -->
+
+        <class>cat.uvic.teknos.registry.jpa.models.JpaEmployee</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaEmployeeDetail</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaShift</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaTimeLog</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaTraining</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaEmployeeTraining</class>
+
+        <!-- Connexió MySQL -->
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://mysql-2e9c0f32-uvic-0484bd.f.aivencloud.com:15066/registry"/>
+            <property name="jakarta.persistence.jdbc.user" value="avnadmin"/>
+            <property name="jakarta.persistence.jdbc.password" value="AVNS__d68fnK-OS8EjtViUwp"/>
+
+            <!-- Hibernate config -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+        </properties>
+    </persistence-unit>
+    <!-- 2. New H2 Persistence Unit for Testing -->
+    <persistence-unit name="registry-h2" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaEmployee</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaEmployeeDetail</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaShift</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaTimeLog</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaTraining</class>
+        <class>cat.uvic.teknos.registry.jpa.models.JpaEmployeeTraining</class>
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver" />
+            <!-- Use in-memory database -->
+            <property name="jakarta.persistence.jdbc.url"    value="jdbc:h2:mem:registry_test_db;DB_CLOSE_DELAY=-1" />
+            <property name="jakarta.persistence.jdbc.user"   value="sa" />
+            <property name="jakarta.persistence.jdbc.password" value="" />
+            <property name="hibernate.dialect"               value="org.hibernate.dialect.H2Dialect"/>
+            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create" />
+            <!-- Optional: tells Hibernate where to find your data.sql file -->
+            <property name="hibernate.show_sql" value="false"/>
+        </properties>
+    </persistence-unit>
+</persistence>

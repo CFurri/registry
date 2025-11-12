@@ -15,3 +15,4 @@ include("app", "model", "repositories", "jdbc", "jpa", "server", "client")
 
 
 include("client")
+include("utilities")
