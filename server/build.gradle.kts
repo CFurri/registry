@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":repositories"))
     implementation(project(":jpa"))
     implementation(project(":jdbc"))
+    implementation(project(":utilities"))
 
     implementation("com.mysql:mysql-connector-j:9.3.0")
 
@@ -27,7 +28,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     testImplementation("org.mockito:mockito-core:5.12.0")
-
     testImplementation("org.mockito:mockito-junit-jupiter:5.12.0")
 }
 

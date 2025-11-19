@@ -1,15 +1,12 @@
 plugins {
-    id("java")
-}
-
-group = "org.example"
-version = "unspecified"
-
-repositories {
-    mavenCentral()
+    id("buildlogic.java-common-conventions")
 }
 
 dependencies {
+
+    implementation(project(":server"))
+    implementation(project(":client"))
+
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

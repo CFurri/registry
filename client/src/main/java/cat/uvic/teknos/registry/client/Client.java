@@ -21,6 +21,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.nio.charset.StandardCharsets;
 
+//Practica3 imports:
+import cat.uvic.teknos.registry.security.CryptoUtils;
+import java.util.Optional;
+
+
 public class Client {
 
     private final String host = "localhost";
@@ -28,6 +33,7 @@ public class Client {
     private final ObjectMapper objectMapper;
     private final RawHttp http;
     private final Scanner scanner;
+    private final CryptoUtils cryptoUtils; //P3
 
     // Nous camps per inactivitat
     private ScheduledExecutorService inactivityTimer;
@@ -42,6 +48,7 @@ public class Client {
         this.objectMapper.registerModule(new JavaTimeModule());
         this.http = new RawHttp();
         this.scanner = new Scanner(System.in);
+        this.cryptoUtils = new CryptoUtils(); //P3
     }
 
     /**
@@ -117,7 +124,7 @@ public class Client {
 
                 }
             } else {
-                System.out.println("No s'han trobat empleats.");
+                System.out.println("No s'han trobat empleats o les dades estan corruptes.");
             }
         } catch (IOException e) {
             System.err.println("Error durant la comunicació amb el servidor (" + e.getClass().getSimpleName() + "): " + e.getMessage());
@@ -266,6 +273,12 @@ public class Client {
             RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
 
             if (response.getStatusCode() == 200) {
+                // <-- P3: VERIFICAR HASH DE RESPOSTA -->
+                if (!verifyResponseHash(response)) {
+                    System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
+                    return null; // Retornem null per indicar l'error
+                }
+
                 String jsonBody = response.getBody().orElseThrow().toString();
                 return objectMapper.readValue(jsonBody, new TypeReference<>() {});
             } else {
@@ -315,12 +328,16 @@ public class Client {
         // 1. Convertim l'objecte DTO a una cadena de text JSON
         String jsonBody = objectMapper.writeValueAsString(newEmployee);
 
+        //P3: Calcular el Hash del cos enviat
+        String hash = cryptoUtils.hash(jsonBody);
+
         // 2. Creem la petició POST, incloent capçaleres importants per al cos JSON
         RawHttpRequest request = http.parseRequest(
                 "POST /api/employees HTTP/1.1\r\n" +
                         "Host: " + host + "\r\n" +
                         "Content-Type: application/json\r\n" + // Crucial: li diem al servidor que enviem JSON
                         "Content-Length: " + jsonBody.getBytes().length + "\r\n" + // Crucial: li diem la mida del cos
+                        "X-Message-Hash: " + hash + "\r\n" + // <-- P3: CAPÇALERA DE HASH
                         "Connection: close\r\n" +
                         "\r\n" + // Línia en blanc que separa capçaleres i cos
                         jsonBody); // El cos de la petició
@@ -333,6 +350,10 @@ public class Client {
 
             // L'estàndard per a una creació amb èxit és 201 Created
             if (response.getStatusCode() == 201) {
+                if (!verifyResponseHash(response)) {
+                    System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
+                    return false;
+                }
                 return true;
             } else {
                 // Pot ser un 400 Bad Request si el JSON és invàlid, o 409 Conflict si l'email ja existeix
@@ -367,6 +388,9 @@ public class Client {
         // Serialitzem l'objecte a JSON
         String jsonBody = objectMapper.writeValueAsString(employee);
 
+        //P3: Calcular el Hash del cost enviat
+        String hash = cryptoUtils.hash(jsonBody);
+
         // Calculem la mida del cos EN BYTES (importantíssim)
         byte[] jsonBodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
         int contentLength = jsonBodyBytes.length;
@@ -377,6 +401,7 @@ public class Client {
                 "Connection: close\r\n" +
                 "Content-Type: application/json\r\n" +
                 "Content-Length: " + contentLength + "\r\n" +
+                "X-Message-Hash: " + hash + "\r\n" + // <-- P3: CAPÇALERA DE HASH
                 "\r\n" + // Línia en blanc VITAL
                 jsonBody; // El cos
 
@@ -394,6 +419,12 @@ public class Client {
             // 5. Comprovem el codi de resposta
             // Un PUT exitós pot retornar 200 (OK) o 204 (No Content)
             if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+                if (response.getStatusCode() == 200) { // Un 204 no té cos
+                    if (!verifyResponseHash(response)) {
+                        System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
+                        return false;
+                    }
+                }
                 return true;
             } else {
                 // Gestionem errors comuns com 404 (No trobat)
@@ -420,6 +451,12 @@ public class Client {
             RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
 
             if (response.getStatusCode() == 200) {
+                // <-- P3: VERIFICAR HASH DE RESPOSTA -->
+                if (!verifyResponseHash(response)) {
+                    System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
+                    return null; // Retornem null per indicar l'error
+                }
+
                 String jsonBody = response.getBody().orElseThrow().toString();
                 return objectMapper.readValue(jsonBody, EmployeeDTO.class);
             } else if (response.getStatusCode() == 404) {
@@ -430,6 +467,48 @@ public class Client {
                 return null;
             }
         }
+    }
+
+
+    // <-- P3: MÈTODE PER VERIFICAR HASHES REBUTS -->
+    /**
+     * Verifica la integritat d'una resposta HTTP comprovant la seva capçalera X-Message-Hash.
+     * @param response La resposta HTTP rebuda.
+     * @return true si el hash és correcte o si la resposta no té cos, false si hi ha un error d'integritat.
+     */
+    private boolean verifyResponseHash(RawHttpResponse<?> response) {
+        // Obtenim la capçalera amb el hash que envia el servidor
+        Optional<String> receivedHashOpt = response.getHeaders().getFirst("X-Message-Hash");
+
+        // Obtenim el cos
+        Optional<? extends rawhttp.core.body.BodyReader> bodyOpt = response.getBody();
+        if (bodyOpt.isEmpty()) {
+            // Si no hi ha cos (p.ex. un 204 No Content), no cal verificar res.
+            return true;
+        }
+
+        // Si hi ha cos, HI HA D'HAVER hash.
+        if (receivedHashOpt.isEmpty()) {
+            System.err.println("Error d'integritat: El servidor ha enviat un cos sense la capçalera X-Message-Hash.");
+            return false;
+        }
+
+        String receivedHash = receivedHashOpt.get();
+        String jsonBody = bodyOpt.get().toString();
+
+        // Calculem el nostre propi hash del cos
+        String calculatedHash = cryptoUtils.hash(jsonBody);
+
+        // Comparem
+        if (!receivedHash.equals(calculatedHash)) {
+            System.err.println("ALERTA DE SEGURETAT: El hash del missatge no coincideix!");
+            System.err.println("  > Hash rebut:   " + receivedHash);
+            System.err.println("  > Hash calculat: " + calculatedHash);
+            return false;
+        }
+
+        // Tot correcte
+        return true;
     }
 
 

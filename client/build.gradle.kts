@@ -1,14 +1,12 @@
 plugins {
-    id("buildlogic.java-common-conventions")
-}
-repositories {
-    mavenCentral()
+    id("buildlogic.java-application-conventions")
 }
 
 dependencies {
     implementation(project(":model"))
     implementation(project(":app"))
     implementation(project(":server"))
+    implementation(project(":utilities"))
 
     implementation("com.mysql:mysql-connector-j:9.3.0")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.0") // per JSON
