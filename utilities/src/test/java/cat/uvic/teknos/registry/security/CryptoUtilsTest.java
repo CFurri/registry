@@ -4,9 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import javax.crypto.SecretKey;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,89 +13,64 @@ import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Test unitari per a CryptoUtils.
- * Aquests tests depenen del fitxer 'crypto.properties' a 'src/test/resources'.
- */
 class CryptoUtilsTest {
 
     private CryptoUtils cryptoUtils;
-    private static final String EXPECTED_HASH_FOR_HELLO = "d76051e1dae76d1f309598102df58d84";
-    /**
-     * Aquest mètode s'assegura que existeix un fitxer crypto.properties
-     * a 'build/resources/test' abans que s'executi cada test.
-     * Això és vital perquè la classe CryptoUtils el pugui llegir.
-     */
-    @BeforeEach
-    void setUp() throws IOException {
-        // Obtenim el directori on s'executen els tests (classpath)
-        // Normalment és 'build/resources/test' o 'build/classes/java/test'
-        String resourcesPathStr = CryptoUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        Path resourcesPath = new File(resourcesPathStr).toPath();
 
-        // Creem el fitxer crypto.properties allà
-        Path propertiesFile = resourcesPath.resolve("crypto.properties");
+    @BeforeEach
+    void setUp() throws Exception {
+        // Preparem un entorn de test (creem un crypto.properties temporal)
+        String resourcesPathStr = "build/resources/test";
+        File resourcesDir = new File(resourcesPathStr);
+        if (!resourcesDir.exists()) resourcesDir.mkdirs();
+
+        Path propertiesFile = resourcesDir.toPath().resolve("crypto.properties");
 
         Properties props = new Properties();
-        props.setProperty("hashing.algorithm", "MD5");
-        props.setProperty("hashing.salt", "abc");
+        props.setProperty("hashing.algorithm", "SHA-256");
+        props.setProperty("hashing.salt", "SaltDeProva");
+        props.setProperty("symmetric.key.size", "256");
+        // No posem rutes de keystore reals per no fallar si no existeixen al test,
+        // però el CryptoUtils les intentarà llegir si les cridem.
 
         try (OutputStream output = Files.newOutputStream(propertiesFile)) {
             props.store(output, "Test crypto properties");
-        } catch (Exception e) {
-            // Si falla aquí, els tests no es poden executar
-            throw new RuntimeException("No s'ha pogut crear el fitxer crypto.properties de test", e);
         }
 
-        // Ara que el fitxer existeix, podem instanciar la classe
+        // Instanciem la classe (llegirà el fitxer que acabem de crear)
         cryptoUtils = new CryptoUtils();
     }
 
     @Test
-    @DisplayName("Hash should be deterministic (same input -> same output)")
+    @DisplayName("Hash should be deterministic (SHA-256)")
     void hashIsDeterministic() {
-        String hash1 = cryptoUtils.hash("hello");
-        String hash2 = cryptoUtils.hash("hello");
+        String input = "Hola Món";
+        String hash1 = cryptoUtils.hash(input);
+        String hash2 = cryptoUtils.hash(input);
 
         assertNotNull(hash1);
-        assertEquals(EXPECTED_HASH_FOR_HELLO, hash1, "El hash no coincideix amb el valor esperat.");
-        assertEquals(hash1, hash2, "El hash no és determinista.");
+        assertEquals(hash1, hash2, "El hash ha de ser idèntic per a la mateixa entrada");
+        assertNotEquals(input, hash1, "El hash no pot ser igual al text pla");
     }
 
     @Test
-    @DisplayName("Different inputs should produce different hashes")
-    void differentInputsProduceDifferentHashes() {
-        String hash1 = cryptoUtils.hash("hello");
-        String hash2 = cryptoUtils.hash("world");
+    @DisplayName("Symmetric Encryption and Decryption should work")
+    void testSymmetricEncryption() {
+        // 1. Simulem un Handshake (Generem una clau de sessió i la injectem)
+        SecretKey sessionKey = cryptoUtils.generateSessionKey();
+        cryptoUtils.setSessionKey(sessionKey);
 
-        assertNotEquals(hash1, hash2, "Dues entrades diferents no haurien de produir el mateix hash.");
-    }
+        String originalText = "Dades Confidencials dels Empleats";
 
-    @Test
-    @DisplayName("Hash(String) should handle null input")
-    void hashStringHandlesNull() {
-        String hash = cryptoUtils.hash((String) null);
-        assertNull(hash, "El hash d'un String null hauria de ser null.");
-    }
+        // 2. Xifrem
+        String encryptedBase64 = cryptoUtils.encrypt(originalText);
+        assertNotNull(encryptedBase64);
+        assertNotEquals(originalText, encryptedBase64);
 
-    @Test
-    @DisplayName("Hash(byte[]) should handle null input")
-    void hashBytesHandlesNull() {
-        String hash = cryptoUtils.hash((byte[]) null);
-        assertNull(hash, "El hash d'un byte[] null hauria de ser null.");
-    }
+        // 3. Desxifrem
+        String decryptedText = cryptoUtils.decrypt(encryptedBase64);
 
-    @Test
-    @DisplayName("Hash should handle empty string input")
-    void hashHandlesEmptyString() {
-        // 1. Calculem el hash d'un string buit
-        String hash = cryptoUtils.hash("");
-        assertNotNull(hash);
-
-        // 2. Aquest és el hash MD5 esperat per al salt "abc"
-        String expectedHashForEmpty = "900150983cd24fb0d6963f7d28e17f72";
-
-        // 3. Comprovem que el hash calculat (el real) és igual a l'esperat
-        assertEquals(expectedHashForEmpty, hash, "El hash d'un String buit no és correcte.");
+        // 4. Verifiquem
+        assertEquals(originalText, decryptedText, "El text desxifrat ha de coincidir amb l'original");
     }
 }

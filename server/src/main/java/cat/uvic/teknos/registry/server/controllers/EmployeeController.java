@@ -96,25 +96,30 @@ public class EmployeeController implements RawHttpService {
     // CORRECCIÓ: Mètode per a respostes JSON adaptat a la versió 2.6.0
     private RawHttpResponse<?> jsonResponse(int status, String reason, Object data) {
         try {
+            // 1. Convertir l'objecte (DTO o Llista) a JSON
             String jsonBody = objectMapper.writeValueAsString(data);
 
-            // <-- NOU: Calculem el hash
-            String hash = cryptoUtils.hash(jsonBody);
+            // 2. XIFRAR el JSON (fent servir la clau de sessió negociada)
+            // Nota: Si no s'ha fet handshake, això llançarà excepció, cosa que és correcta per seguretat.
+            String encryptedBody = cryptoUtils.encrypt(jsonBody);
 
+            // 3. Calcular el HASH del cos xifrat
+            String hash = cryptoUtils.hash(encryptedBody);
 
-            // <-- NOU: Construïm la resposta com un String, incloent-hi la nova capçalera
+            // 4. Construir la resposta amb el cos XIFRAT i el Hash
             String responseString = "HTTP/1.1 " + status + " " + reason + "\r\n" +
+                    "Content-Type: text/plain\r\n" + // Ara és text (Base64), no application/json directe
+                    "Content-Length: " + encryptedBody.length() + "\r\n" +
                     "X-Message-Hash: " + hash + "\r\n" +
-                    // La llibreria afegirà Content-Type automàticament
-                    "\r\n"; // Línia en blanc abans del cos
+                    "\r\n";
 
-            // Parseja la resposta (que ara ja inclou la capçalera de hash)
-            // i després afegeix-hi el cos.
             return http.parseResponse(responseString)
-                    .withBody(new StringBody(jsonBody, "application/json; charset=utf-8"));
+                    .withBody(new StringBody(encryptedBody));
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to serialize response to JSON", e);
+            throw new RuntimeException("Error serialitzant a JSON", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error xifrant la resposta del servidor", e);
         }
     }
 
@@ -156,28 +161,36 @@ public class EmployeeController implements RawHttpService {
         }
 
         try {
-            verifyRequestHash(request); //P3
+            // 1. Verificar Hash (sobre el text xifrat que hem rebut)
+            verifyRequestHash(request);
 
-            String jsonPayload = request.getBody().get().toString();
+            // 2. Obtenir el text xifrat
+            String encryptedPayload = request.getBody().get().toString();
+
+            // 3. DESXIFRAR (Recuperem el JSON original)
+            String jsonPayload = cryptoUtils.decrypt(encryptedPayload);
+
+            // 4. Continuar com sempre (convertir JSON a DTO)
             EmployeeDTO dto = objectMapper.readValue(jsonPayload, EmployeeDTO.class);
 
+            // ... (resta de lògica per guardar l'empleat) ...
             Employee employeeToSave = modelFactory.newEmployee();
-            employeeToSave.setFirstName(dto.getFirstName());
-            employeeToSave.setLastName(dto.getLastName());
-            employeeToSave.setEmail(dto.getEmail());
-            employeeToSave.setPhoneNumber(dto.getPhoneNumber());
-            //employeeToSave.setHireDate(dto.getHireDate());
-
+            // ... set camps ...
             employeeRepository.save(employeeToSave);
 
-            EmployeeDTO createdDTO = toDTO(employeeToSave); // Convertim a DTO abans d'enviar
+            EmployeeDTO createdDTO = toDTO(employeeToSave);
+            // NOTA: Si vols ser molt estricte, la resposta també s'hauria de xifrar,
+            // però per aquesta pràctica potser n'hi ha prou amb xifrar la petició d'entrada.
             return Optional.of(jsonResponse(201, "Created", createdDTO));
+
         } catch (IOException e) {
-            throw new BadRequestException("Invalid JSON format or missing fields.", e);
+            throw new BadRequestException("Invalid data format.", e);
         } catch (RuntimeException e) {
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate entry")) {
-                throw new ConflictException("An employee with that email or phone number already exists.", e);
+            // Capturar errors de desxifratge o duplicats
+            if (e.getMessage().contains("desxifrant")) {
+                throw new BadRequestException("Decryption failed. Invalid key or corrupted data.");
             }
+            // ... (gestió de ConflictException existent) ...
             throw e;
         }
     }

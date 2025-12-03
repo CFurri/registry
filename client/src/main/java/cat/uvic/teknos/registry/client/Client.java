@@ -11,6 +11,7 @@ import rawhttp.core.RawHttpResponse;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Scanner;
 
@@ -23,13 +24,15 @@ import java.nio.charset.StandardCharsets;
 
 //Practica3 imports:
 import cat.uvic.teknos.registry.security.CryptoUtils;
+
+import javax.crypto.SecretKey;
 import java.util.Optional;
 
 
 public class Client {
 
     private final String host = "localhost";
-    private final int port = 9000;
+    private final int port = 9001;
     private final ObjectMapper objectMapper;
     private final RawHttp http;
     private final Scanner scanner;
@@ -57,10 +60,18 @@ public class Client {
     public void start() {
         try {
             inactivityTimer = Executors.newSingleThreadScheduledExecutor();
-            resetInactivityTimer(); //Programem la primera desconnexió
 
-            // Comença el bucle del menú
-            runMenu();
+            // 2. --- AFEGEIX AQUEST BLOC AQUÍ ---
+            try {
+                performHandshake(); // Negociem la clau de sessió amb el servidor
+            } catch (IOException e) {
+                System.err.println("Error crític: No s'ha pogut establir una connexió segura (Handshake fallit).");
+                e.printStackTrace();
+                return; // Si no tenim clau, no podem continuar, sortim del programa.
+            }
+            // ------------------------------------
+
+            resetInactivityTimer();
 
         } finally {
             // Tanquem recursos quan 'runMenu' acaba
@@ -273,18 +284,28 @@ public class Client {
             RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
 
             if (response.getStatusCode() == 200) {
-                // <-- P3: VERIFICAR HASH DE RESPOSTA -->
+                // 1. Verificar integritat (Hash) sobre el cos xifrat
                 if (!verifyResponseHash(response)) {
-                    System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
-                    return null; // Retornem null per indicar l'error
+                    System.err.println("Error: Hash incorrecte. Dades compromeses.");
+                    return null;
                 }
 
-                String jsonBody = response.getBody().orElseThrow().toString();
+                // 2. Obtenir cos xifrat
+                String encryptedBody = response.getBody().orElseThrow().toString();
+
+                // 3. DESXIFRAR
+                String jsonBody = cryptoUtils.decrypt(encryptedBody);
+
+                // 4. Convertir JSON a Objectes
                 return objectMapper.readValue(jsonBody, new TypeReference<>() {});
+
             } else {
                 System.err.println("Error del servidor: " + response.getStatusCode());
                 return null;
             }
+        } catch (Exception e) {
+            System.err.println("Error processant la resposta: " + e.getMessage());
+            return null;
         }
     }
 
@@ -328,19 +349,23 @@ public class Client {
         // 1. Convertim l'objecte DTO a una cadena de text JSON
         String jsonBody = objectMapper.writeValueAsString(newEmployee);
 
-        //P3: Calcular el Hash del cos enviat
-        String hash = cryptoUtils.hash(jsonBody);
+        // Això ens retorna una cadena Base64 inintel·ligible (IV + Dades Xifrades)
+        String encryptedBody = cryptoUtils.encrypt(jsonBody);
+
+        // P4 --> 3. Calculem el HASH del cos xifrat (per garantir integritat del que s'envia per xarxa)
+        String hash = cryptoUtils.hash(encryptedBody);
 
         // 2. Creem la petició POST, incloent capçaleres importants per al cos JSON
         RawHttpRequest request = http.parseRequest(
                 "POST /api/employees HTTP/1.1\r\n" +
                         "Host: " + host + "\r\n" +
-                        "Content-Type: application/json\r\n" + // Crucial: li diem al servidor que enviem JSON
-                        "Content-Length: " + jsonBody.getBytes().length + "\r\n" + // Crucial: li diem la mida del cos
+                        "Content-Type: text/plain\r\n" + // <--- Important: Ara enviem text xifrat, no JSON directament                        "Content-Length: " + jsonBody.getBytes().length + "\r\n" + // Crucial: li diem la mida del cos
+                        "Content-Length: " + encryptedBody.length() + "\r\n" +
                         "X-Message-Hash: " + hash + "\r\n" + // <-- P3: CAPÇALERA DE HASH
                         "Connection: close\r\n" +
                         "\r\n" + // Línia en blanc que separa capçaleres i cos
-                        jsonBody); // El cos de la petició
+                        encryptedBody); // El cos de la petició
+
 
         try (Socket socket = new Socket(host, port)) {
             System.out.println("Enviant petició POST per crear un nou empleat...");
@@ -385,55 +410,60 @@ public class Client {
         String path = "/api/employees/" + employee.getId();
         System.out.println("Enviant petició PUT a " + path + "...");
 
-        // Serialitzem l'objecte a JSON
-        String jsonBody = objectMapper.writeValueAsString(employee);
+        try {
+            // --- INICI XIFRATGE ---
 
-        //P3: Calcular el Hash del cost enviat
-        String hash = cryptoUtils.hash(jsonBody);
+            // A. Convertim l'objecte a JSON (text pla)
+            String jsonBody = objectMapper.writeValueAsString(employee);
 
-        // Calculem la mida del cos EN BYTES (importantíssim)
-        byte[] jsonBodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
-        int contentLength = jsonBodyBytes.length;
+            // B. XIFREM el JSON
+            // CryptoUtils agafa automàticament la clau interna que ha carregat del fitxer
+            String encryptedBody = cryptoUtils.encrypt(jsonBody);
 
-        // 3. Construïm la petició HTTP completa (headers + cos)
-        String requestString = "PUT " + path + " HTTP/1.1\r\n" +
-                "Host: " + host + "\r\n" +
-                "Connection: close\r\n" +
-                "Content-Type: application/json\r\n" +
-                "Content-Length: " + contentLength + "\r\n" +
-                "X-Message-Hash: " + hash + "\r\n" + // <-- P3: CAPÇALERA DE HASH
-                "\r\n" + // Línia en blanc VITAL
-                jsonBody; // El cos
+            // C. Calculem el HASH del cos xifrat (per garantir integritat del que viatja per la xarxa)
+            String hash = cryptoUtils.hash(encryptedBody);
 
-        // Parsejem la petició
-        RawHttpRequest request = http.parseRequest(requestString);
+            // D. Construïm la petició HTTP
+            // Fixa't que canviem Content-Type a text/plain perquè enviem Base64, no JSON directe
+            RawHttpRequest request = http.parseRequest(
+                    "PUT " + path + " HTTP/1.1\r\n" +
+                            "Host: " + host + "\r\n" +
+                            "Connection: close\r\n" +
+                            "Content-Type: text/plain\r\n" +
+                            "Content-Length: " + encryptedBody.length() + "\r\n" +
+                            "X-Message-Hash: " + hash + "\r\n" +
+                            "\r\n" +
+                            encryptedBody); // Enviem el cos xifrat
 
-        // 4. Obrim socket, enviem petició i rebem resposta
-        // Fem servir el mateix patró robust "un socket per petició"
-        try (Socket socket = new Socket(host, port)) {
+            // --- FI XIFRATGE ---
 
-            request.writeTo(socket.getOutputStream());
+            // 3. Obrim socket, enviem petició i rebem resposta
+            try (Socket socket = new Socket(host, port)) {
+                request.writeTo(socket.getOutputStream());
 
-            RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
+                RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
 
-            // 5. Comprovem el codi de resposta
-            // Un PUT exitós pot retornar 200 (OK) o 204 (No Content)
-            if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
-                if (response.getStatusCode() == 200) { // Un 204 no té cos
-                    if (!verifyResponseHash(response)) {
-                        System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
-                        return false;
+                // 4. Comprovem el codi de resposta
+                if (response.getStatusCode() == 200 || response.getStatusCode() == 204) {
+                    if (response.getStatusCode() == 200) {
+                        // Si el servidor respon amb dades (200), verifiquem també la seva integritat
+                        if (!verifyResponseHash(response)) {
+                            System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
+                            return false;
+                        }
                     }
+                    return true;
+                } else {
+                    System.err.println("Error del servidor: " + response.getStatusCode() + " " + response.getStartLine().getReason());
+                    return false;
                 }
-                return true;
-            } else {
-                // Gestionem errors comuns com 404 (No trobat)
-                System.err.println("Error del servidor: " + response.getStatusCode() + " " + response.getStartLine().getReason());
-                return false;
             }
+        } catch (Exception e) {
+            // Capturem excepcions de xifratge o de xarxa
+            System.err.println("Error durant l'actualització: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
-        // Les IOException (com JsonProcessingException o de xarxa) es propagaran
-        // i seran capturades pel 'handleUpdateEmployee'.
     }
 
 
@@ -451,14 +481,21 @@ public class Client {
             RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
 
             if (response.getStatusCode() == 200) {
-                // <-- P3: VERIFICAR HASH DE RESPOSTA -->
+                // 1. Verificar integritat (Hash) sobre el cos xifrat
                 if (!verifyResponseHash(response)) {
-                    System.err.println("Error: Les dades rebudes del servidor estan corruptes (el hash no coincideix)");
-                    return null; // Retornem null per indicar l'error
+                    System.err.println("Error: Hash incorrecte. Dades compromeses.");
+                    return null;
                 }
 
-                String jsonBody = response.getBody().orElseThrow().toString();
-                return objectMapper.readValue(jsonBody, EmployeeDTO.class);
+                // 2. Obtenir cos xifrat
+                String encryptedBody = response.getBody().orElseThrow().toString();
+
+                // 3. DESXIFRAR
+                String jsonBody = cryptoUtils.decrypt(encryptedBody);
+
+                // 4. Convertir JSON a Objectes
+                return objectMapper.readValue(jsonBody, new TypeReference<>() {});
+
             } else if (response.getStatusCode() == 404) {
                 System.err.println("Empleat amb ID " + id + " no trobat.");
                 return null;
@@ -466,6 +503,10 @@ public class Client {
                 System.err.println("Error del servidor: " + response.getStatusCode() + " " + response.getStartLine().getReason());
                 return null;
             }
+        } catch (Exception e) {
+            System.err.println("Error processant la resposta del servidor: " + e.getMessage());
+            // e.printStackTrace(); // Descomenta si vols veure més detalls
+            return null;
         }
     }
 
@@ -599,4 +640,41 @@ public class Client {
         }
     }
     // --- FI NOUS MÈTODES ---
+
+    private void performHandshake() throws IOException {
+        System.out.println("Iniciant Handshake segur...");
+        String clientAlias = "client1"; // El nostre nom
+
+        try (Socket socket = new Socket(host, port)) {
+            RawHttpRequest request = http.parseRequest(
+                    "GET /keys/" + clientAlias + " HTTP/1.1\r\n" +
+                            "Host: " + host + "\r\n" +
+                            "Connection: close\r\n\r\n");
+
+            request.writeTo(socket.getOutputStream());
+            RawHttpResponse<?> response = http.parseResponse(socket.getInputStream()).eagerly();
+
+            if (response.getStatusCode() == 200) {
+                // 1. Rebre la clau xifrada (Asimètricament)
+                String encryptedKey = response.getBody().get().toString();
+
+                // 2. Desxifrar amb la nostra clau PRIVADA (al client1.jks)
+                String sessionKeyString = cryptoUtils.asymmetricDecrypt(
+                        encryptedKey,
+                        "/client1.jks",
+                        clientAlias
+                );
+
+                // 3. Reconstruir i guardar la SecretKey
+                byte[] decodedKey = Base64.getDecoder().decode(sessionKeyString);
+                SecretKey sessionKey = new javax.crypto.spec.SecretKeySpec(decodedKey, "AES");
+
+                cryptoUtils.setSessionKey(sessionKey);
+                System.out.println("Handshake complet! Clau de sessió establerta.");
+
+            } else {
+                throw new RuntimeException("Error en handshake: " + response.getStatusCode());
+            }
+        }
+    }
 }
