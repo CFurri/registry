@@ -128,3 +128,5 @@ El projecte inclou tests unitaris i d'integració que s'executen contra una base
 | 1.0.0   | Monolitic Backoffice            |
 | 2.0.0   | Server-Client edition           |
 | 2.1.0   | Server-Client edition & Threads |
+| 2.2.0   | Cryptography 1                  |
+| 2.2.1   | Cryptography 2                  |
