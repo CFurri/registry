@@ -29,7 +29,7 @@ public class CryptoUtils {
     private final String keystorePassword;
 
     // Clau de sessió (Simètrica) - Aquesta canviarà dinàmicament!
-    private SecretKey sessionKey;
+    private static SecretKey sessionKey;
 
     private static final String PROPERTIES_FILE = "/crypto.properties";
     private static final int GCM_IV_LENGTH = 12;

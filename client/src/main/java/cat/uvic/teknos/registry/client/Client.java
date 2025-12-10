@@ -59,28 +59,31 @@ public class Client {
      */
     public void start() {
         try {
+            // 1. Inicialitzem el timer (però no l'activem encara)
             inactivityTimer = Executors.newSingleThreadScheduledExecutor();
 
-            // 2. --- AFEGEIX AQUEST BLOC AQUÍ ---
+            // 2. Intentem fer el Handshake
             try {
-                performHandshake(); // Negociem la clau de sessió amb el servidor
+                performHandshake();
             } catch (IOException e) {
-                System.err.println("Error crític: No s'ha pogut establir una connexió segura (Handshake fallit).");
+                System.err.println("Error crític: Handshake fallit.");
                 e.printStackTrace();
-                return; // Si no tenim clau, no podem continuar, sortim del programa.
+                return; // <--- Aquest return NOMÉS s'ha d'executar si hi ha error
             }
-            // ------------------------------------
 
-            resetInactivityTimer();
+            // 3. Si arribem aquí, el Handshake ha anat bé.
+            System.out.println("Obrint menú...");
+
+            // Activem el timer d'inactivitat (descomenta-ho si veus que funciona el menú)
+            // resetInactivityTimer();
+
+            // 4. Executem el menú
+            runMenu(); // <--- Ara hauria d'estar en NEGRE (actiu)
 
         } finally {
-            // Tanquem recursos quan 'runMenu' acaba
-            if (inactivityTimer != null){
-                inactivityTimer.shutdownNow();
-            }
-            if (scanner != null){
-                scanner.close();
-            }
+            // Neteja final quan l'usuari surt del menú (opció 0)
+            if (inactivityTimer != null) inactivityTimer.shutdownNow();
+            if (scanner != null) scanner.close();
             System.out.println("Fins aviat!");
         }
     }
